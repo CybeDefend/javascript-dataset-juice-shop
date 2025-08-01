@@ -68,7 +68,7 @@ Je vais maintenant te détailler chaque étape qu’il faudra faire pour réalis
 			FAITES PLUTÔT : user_name, search_query, item_details, build_query()
 			Commentaires dans le code :
 			NE FAITES PAS : // Sanitize this input is Sanitized before use
-			FAITES PLUTÔT : // Format the user's search term for the database ou, encore mieux, aucun commentaire du tout si le code est simple.
+			AUNCUN COMMENTAIRE NE DOIT ETRE ECRIT DANS LE CODE GENERE
 			Rappelez-vous : l'objectif est de créer un défi réaliste. Pensez comme un développeur, pas comme un auditeur de sécurité.
 		- MISSION CRITIQUE : GÉNÉRATION DE SCÉNARIOS DE TEST COMPLEXES
 			OBJECTIF PRINCIPAL : Concevoir des exemples de code vulnérable (TP) ou non-vulnérable (FP) dont la principale caractéristique est un dataflow complexe et non-trivial. L'objectif est de mettre nos IA d'analyse de sécurité en difficulté maximale.

@@ -1079,7 +1079,220 @@
                 "vulnerabilityType": "sast"
             }
         },
-        "vulnerability": "sast"
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/data/static/codefixes/unionSqlInjectionChallenge_1.ts",
+                "category": "sink",
+                "line": 6,
+                "explanation": "Requête SQL avec injection potentielle - MAIS code inaccessible",
+                "variables": [
+                    "criteria"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "FP",
+            "explanation": "FAUX POSITIF - Dead Code. Bien que la fonction searchProducts contienne une vulnérabilité SQL injection exploitable (ligne 5: criteria.replace() ne modifie pas la variable + ligne 6: injection directe via template literal), cette fonction n'est jamais appelée par l'application. Le serveur importe searchProducts depuis './routes/search.ts' et non depuis ce fichier statique. Le fichier '/data/static/codefixes/unionSqlInjectionChallenge_1.ts' est du code mort (dead code) qui ne présente aucun risque car il n'est jamais exécuté."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "9f8e7d6c-5b4a-3928-8765-432109876543",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 30,
+                                "content": "      const injectionPayload = process.env.SEARCH_INJECTION_PAYLOAD"
+                            },
+                            {
+                                "line": 31,
+                                "content": "      if (injectionPayload && requestData.enableAdvancedFeatures) {"
+                            },
+                            {
+                                "line": 32,
+                                "content": "        sessionData.preferences.additionalTerms = injectionPayload"
+                            },
+                            {
+                                "line": 33,
+                                "content": "      }"
+                            }
+                        ],
+                        "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                        "vulnerableStartLine": 32,
+                        "vulnerableEndLine": 32,
+                        "startLine": 30,
+                        "endLine": 33,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "9f8e7d6c-5b4a-3928-8765-432109876543",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-08-02T15:30:00.000Z",
+                "updateAt": "2025-08-02T15:30:00.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "HIGH",
+                "currentPriority": "high_urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/lib/requestInterceptor.ts",
+                "vulnerableStartLine": 32,
+                "vulnerableEndLine": 32,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-89"
+                    ],
+                    "owaspTop10": [
+                        "A03:2021 - Injection"
+                    ],
+                    "cweArray": [
+                        "CWE-89"
+                    ],
+                    "references": [
+                        {
+                            "id": "sql-injection-ref-1",
+                            "name": "OWASP SQL Injection Prevention Cheat Sheet",
+                            "url": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "sql-injection-example.js",
+                            "content": "// Vulnerable pattern\nconst query = `SELECT * FROM products WHERE name LIKE '%${userInput}%'`;\n\n// Safe pattern\nconst query = 'SELECT * FROM products WHERE name LIKE ?';\ndb.query(query, [`%${userInput}%`]);"
+                        }
+                    ],
+                    "id": "sql-injection-vuln-type",
+                    "name": "SQL Injection via Environment Variable",
+                    "shortDescription": "SQL injection vulnerability through environment variable injection into database queries.",
+                    "description": "A SQL injection vulnerability occurs when untrusted data from environment variables flows through multiple application layers and is directly concatenated into SQL queries without proper sanitization or parameterization. This multi-layer dataflow makes the vulnerability harder to detect but equally dangerous.",
+                    "howToPrevent": "1. Use parameterized queries or prepared statements\n2. Validate and sanitize all input data\n3. Apply least privilege principle to database connections\n4. Use ORM frameworks with built-in protection\n5. Implement input validation at all application layers",
+                    "severity": "HIGH",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                        "baseScore": "9.8"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "vuln"
+                        ],
+                        "technology": [
+                            "typescript",
+                            "sequelize"
+                        ],
+                        "languages": [
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "HIGH",
+                        "impact": "HIGH",
+                        "likelihood": "HIGH"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "lib/requestInterceptor.ts",
+                "category": "source",
+                "line": 32,
+                "explanation": "Untrusted environment variable SEARCH_INJECTION_PAYLOAD read as potential source",
+                "variables": [
+                    "process.env.SEARCH_INJECTION_PAYLOAD"
+                ]
+            },
+            {
+                "file": "lib/requestInterceptor.ts",
+                "category": "propagation",
+                "line": 44,
+                "explanation": "Environment variable assigned to sessionData.preferences.additionalTerms without sanitization",
+                "variables": [
+                    "sessionData.preferences.additionalTerms"
+                ]
+            },
+            {
+                "file": "lib/requestInterceptor.ts",
+                "category": "propagation",
+                "line": 56,
+                "explanation": "Data returned as part of intercepted request data to caller",
+                "variables": [
+                    "return value containing sessionData"
+                ]
+            },
+            {
+                "file": "lib/searchEnhancer.ts",
+                "category": "propagation",
+                "line": 19,
+                "explanation": "interceptSearchParams result flows to applySearchEnhancements method",
+                "variables": [
+                    "interceptedData"
+                ]
+            },
+            {
+                "file": "lib/searchEnhancer.ts",
+                "category": "propagation",
+                "line": 56,
+                "explanation": "Session preferences.additionalTerms returned as personalized search term",
+                "variables": [
+                    "sessionData.preferences.additionalTerms"
+                ]
+            },
+            {
+                "file": "lib/searchEnhancer.ts",
+                "category": "propagation",
+                "line": 83,
+                "explanation": "Personalized term added to search criteria parts without validation",
+                "variables": [
+                    "enhancedData.enhancedTerms.personalized"
+                ]
+            },
+            {
+                "file": "lib/queryBuilder.ts",
+                "category": "propagation",
+                "line": 20,
+                "explanation": "Enhanced search terms extracted and passed to query construction",
+                "variables": [
+                    "searchCriteria"
+                ]
+            },
+            {
+                "file": "lib/queryBuilder.ts",
+                "category": "sink",
+                "line": 26,
+                "explanation": "Direct string concatenation of untrusted search terms into SQL query",
+                "variables": [
+                    "baseQuery",
+                    "searchTerms"
+                ]
+            },
+            {
+                "file": "lib/dataProcessor.ts",
+                "category": "sink",
+                "line": 37,
+                "explanation": "Vulnerable SQL query executed against database via sequelize.query",
+                "variables": [
+                    "query"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "TP",
+            "explanation": "True Positive: Multi-layer SQL injection vulnerability with complete dataflow from environment variable through session data to direct SQL concatenation and execution. Code is actively used via routes/enhancedSearch.ts endpoint. Scanner correctly identifies the injection points in queryBuilder.ts where untrusted data flows directly into SQL queries without sanitization."
+        }
     },
     {
         "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
