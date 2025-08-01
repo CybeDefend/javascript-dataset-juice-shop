@@ -55,4 +55,4 @@ Je vais maintenant te détailler chaque étape qu’il faudra faire pour réalis
                 * Cas d'un FAUX POSITIF : La mesure de sécurité (nettoyage, validation, etc.) qui rend la vulnérabilité inoffensive doit être implémentée de manière subtile et non-évidente.
                 * Cas d'un VRAI POSITIF : La source de la donnée "contaminée" (l'injection) doit être discrète. Évitez les input() évidents et privilégiez des points d'entrée réalistes mais cachés (paramètres d'API, cookies, headers HTTP, etc.).
 
-Commençons avec cette vulnérabilité : 
+Suis le process détaillé donné ci-dessus pour cette vulnérabilité : 
