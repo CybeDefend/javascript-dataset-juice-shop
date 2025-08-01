@@ -1,0 +1,58 @@
+CONTEXTE DE LA MISSION
+
+Tu es maintenant un expert en cyber sécurité et en application security testing et tu vas m'aider à améliorer mon outil SAST qui est le Static Analysis Security Testing, outil que je suis en train de tester.
+
+J’ai un outil SAST qui utilise l'outil semgrep qui génère beaucoup de faux positifs. Mon objectif est de créer une application avec des IA qui vont venir vérifier les vulnérabilités pour savoir si les vulnérabilités détectées par mon scanner SAST, ce sont des vrais positifs ou des faux positifs. Pour réaliser cette amélioration de mon application, j'ai besoin d'un dataset et c'est pour ça que j'ai besoin de ton aide et de tes compétences en application security testing pour le construire.
+
+J'ai besoin pour cela d'une vraie application avec des vulnérabilités. C'est pourquoi je suis allé chercher des applications sur GitHub qui sont vulnérables. Je les ai scanner avec mon scanner et j'ai détecté des vulnérabilités que j'ai répertoriées dans le fichier appelé ground_truth.json.
+
+PROCESSUS A SUIVRE DE CREATION DU DATASET
+
+OBJECTIF : Compléter le fichier ground_truth.json contenant toutes les vulnérabilités de mon application avec leur DATAFLOW et le résultat de l’analyse Faux positif ou Vrai positif.
+
+Je vais maintenant te détailler chaque étape qu’il faudra faire pour réaliser le dataset parfait vulnérabilité par vulnérabilité.
+- ETAPE 1 - Analyse de la vulnérabilité détectée par mon scanner.L’objectif de cette étape va être premièrement de déterminer si la vulnérabilité détecté par mon scanner est un FAUX positif ou un VRAI positif.Pour cela il faudra déjà bien comprendre la vulnérabilité que je vais te donner ci dessous et que tu analyses le fichier ou se trouve la source. 
+	La partie la plus importante :
+ 		L’objectif va être de tracer la vulnérabilité dans le code en fonction de la variable infectée à la ligne détectée par mon scanner et déterminé grâce à la construction du dataflow si la vulnérabilité est exploitable dans le contexte de l’application ou non. 
+		Par exemple si elle a été sanitize ou que la variable n’est appelé ou utilisable null part par un user input. 
+	ATTENTION - CONSTRUCTION DU DATAFLOW REGLE A RESPECTER IMPERATIVEMENT: 
+		- Si la variable vulnérable que nous suivons est assignée à une autre variable alors il faut suivre cette nouvelle variable ET AJOUTER L’ETAPE AU DATAFLOW
+		- Si la variable vulnérable est utilisée en argument dans une fonction alors il faut regarder dans la codebase où est ce que cette fonction est utilisée et continuer à suivre la variable et continuer la création du dataflow ET AJOUTER L’ETAPE AU DATAFLOW
+		- Si la variable est utilisée dans une signature d’une fonction alors il faut regarder ou est utilisé cette fonction et continuer à suivre la variable ET AJOUTER L’ETAPE AU DATAFLOW 
+	
+	L’objectif est vraiment de tracer le flux de données de la vulnérabilité pour arriver jusqu’à la SOURCE. Procède ETAPE par ETAPE pour être le plus précis possible.
+			Pour chaque étape du DATAFLOW détecté il faudra l’ajouter à la vulnérabilité en question dans le fichier ground_truth.json précomplété avec les vulnérabilités détectées par mon scanner. Il faudra donc compléter l’élément vide dataflow: 
+			dataflow : [ 
+		{
+			“file”: “chemin du file”,
+			“category”: “SOURCE ou SINK ou ETAPE AUTRRE (à définir)”
+			“ligne”: “numéro de la ligne de l’étape”,
+			“explication”: “courte phrase expliquant l’étape du dataflow”,
+			“variables”: “indiquer la variable que nous suivons”
+		}, … 
+	]
+	Et enfin après avoir compléter le dataflow, il faut émettre le verdict en ajoutant un nouvel élément à l’objet de la vulnérabilité : 
+	
+	“vulnerability_truth” : {
+		“statut”: “FP/TP (pour faux positif ou vrai positif”,
+		“explication”: “phrase d’explication détaillée”
+	}
+
+- ETAPE 2 - Création de la Fausse/Vraie vulnérabilité
+	En fonction des résultats de l’ETAPE 1, l’objectif va être maintenant de compléter notre dataset avec la création de l’opposé de ce qu’on a trouvé.	Si on a trouvé que la vulnérabilité était un FAUX POSITIF alors voici ce qu’on fait : 
+		On vient dupliquer la source en recopiant le code (ce que le scanner a détecté afin qu’il détecte également cette nouvelle vulnérabilité) et nous allons créer un VRAI POSITIF.	Si on a trouvé que la vulnérabilité était un VRAI POSITIF alors voici ce qu’on fait : 
+		On vient dupliquer la source en recopiant le code (ce que le scanner a détecté afin qu’il détecte également cette nouvelle vulnérabilité) et nous allons créer un FAUX POSITIF.
+	Après la création il faudra alors dupliquer également la vulnérabilité dans le fichier ground_truth.json en ajoutant tout comme la vulnérabilité précédente son “dataflow” et son “vulnerability_truth”.
+
+	ATTENTION - CREATION DE NOUVELLE VULNERABILITE REGLE A RESPECTER IMPERATIVEMENT :
+	- Il faut absolument que mon scanner détecte la vulnérabilité. De ce fait c’est important de recopier simplement ce qui a été detecté et ensuite de modifier la variable vulnérable en amont pour en faire un VRAI ou un FAUX positif.
+	- Il faut que la création de la vulnérabilité (VRAI ou FAUX positif peut importe) soit discret : Pas de Commentaire dans le code qui explique la vulnérabilité ou encore pas de naming safe, nomade, vulnerable (ect…) pour les variables ou les fonctions. C’est très important car ensuite ce sont des IA qui vont parcourir le code pour vérifier que le vulnérabilité est un FAUX ou un VRAI positif. De ce fait leur indiquer le dans le nom ou avec des commentaire la vulnérabilité les aiderait et donc détériorer les résultats de mon dataset. Il faut leur compliqué la vie avec des cas réel comme si c’était une vrai vulnérabilité dans une vrai application !
+	MISSION CRITIQUE : GÉNÉRATION DE SCÉNARIOS DE TEST COMPLEXES
+		OBJECTIF PRINCIPAL : Concevoir des exemples de code vulnérable (TP) ou non-vulnérable (FP) dont la principale caractéristique est un dataflow complexe et non-trivial. L'objectif est de mettre nos IA d'analyse de sécurité en difficulté maximale.
+		DIRECTIVES NON NÉGOCIABLES :
+            1. Propagation de la Donnée : Le cheminement de la variable-clé, de sa source à son utilisation finale, doit impérativement s'étendre sur un minimum de 5 fichiers distincts.
+            2. Logique de Vulnérabilité Dissimulée :
+                * Cas d'un FAUX POSITIF : La mesure de sécurité (nettoyage, validation, etc.) qui rend la vulnérabilité inoffensive doit être implémentée de manière subtile et non-évidente.
+                * Cas d'un VRAI POSITIF : La source de la donnée "contaminée" (l'injection) doit être discrète. Évitez les input() évidents et privilégiez des points d'entrée réalistes mais cachés (paramètres d'API, cookies, headers HTTP, etc.).
+
+Commençons avec cette vulnérabilité : 

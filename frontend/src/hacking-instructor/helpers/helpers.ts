@@ -14,13 +14,13 @@ const playbackDelays = {
   slower: 1.5
 }
 
-export async function sleep (timeInMs: number): Promise<void> {
+export async function sleep(timeInMs: number): Promise<void> {
   await new Promise((resolve) => {
     setTimeout(resolve, timeInMs)
   })
 }
 
-export function waitForInputToHaveValue (inputSelector: string, value: string, options: any = { ignoreCase: true, replacement: [] }) {
+export function waitForInputToHaveValue(inputSelector: string, value: string, options: any = { ignoreCase: true, replacement: [] }) {
   return async () => {
     const inputElement: HTMLInputElement = document.querySelector(
       inputSelector
@@ -51,7 +51,35 @@ export function waitForInputToHaveValue (inputSelector: string, value: string, o
   }
 }
 
-export function waitForInputToNotHaveValue (inputSelector: string, value: string, options = { ignoreCase: true }) {
+export function waitForInputToMatchPattern(inputSelector: string, value: string, options: any = { ignoreCase: true, replacement: [] }) {
+  return async () => {
+    const inputElement: HTMLInputElement = document.querySelector(
+      inputSelector
+    )
+
+    if (options.replacement?.length === 2) {
+      const urlParams = new URLSearchParams(window.location.search)
+      const configSource = urlParams.get('configSrc') || 'application.config'
+      const propertyChain = configSource.split('.')
+      let replacementValue: any = window
+      for (const property of propertyChain) {
+        replacementValue = replacementValue[property]
+      }
+      value = value.replace(options.replacement[0], replacementValue || '')
+    }
+
+    while (true) {
+      if (options.ignoreCase && inputElement.value.toLowerCase() === value.toLowerCase()) {
+        break
+      } else if (!options.ignoreCase && inputElement.value === value) {
+        break
+      }
+      await sleep(100)
+    }
+  }
+}
+
+export function waitForInputToNotHaveValue(inputSelector: string, value: string, options = { ignoreCase: true }) {
   return async () => {
     const inputElement: HTMLInputElement = document.querySelector(
       inputSelector
@@ -68,7 +96,7 @@ export function waitForInputToNotHaveValue (inputSelector: string, value: string
   }
 }
 
-export function waitForInputToNotHaveValueAndNotBeEmpty (inputSelector: string, value: string, options = { ignoreCase: true }) {
+export function waitForInputToNotHaveValueAndNotBeEmpty(inputSelector: string, value: string, options = { ignoreCase: true }) {
   return async () => {
     const inputElement: HTMLInputElement = document.querySelector(
       inputSelector
@@ -87,7 +115,7 @@ export function waitForInputToNotHaveValueAndNotBeEmpty (inputSelector: string, 
   }
 }
 
-export function waitForInputToNotBeEmpty (inputSelector: string) {
+export function waitForInputToNotBeEmpty(inputSelector: string) {
   return async () => {
     const inputElement: HTMLInputElement = document.querySelector(
       inputSelector
@@ -102,7 +130,7 @@ export function waitForInputToNotBeEmpty (inputSelector: string) {
   }
 }
 
-export function waitForElementToGetClicked (elementSelector: string) {
+export function waitForElementToGetClicked(elementSelector: string) {
   return async () => {
     const element = document.querySelector(
       elementSelector
@@ -117,7 +145,7 @@ export function waitForElementToGetClicked (elementSelector: string) {
   }
 }
 
-export function waitForElementsInnerHtmlToBe (elementSelector: string, value: string) {
+export function waitForElementsInnerHtmlToBe(elementSelector: string, value: string) {
   return async () => {
     while (true) {
       const element = document.querySelector(
@@ -132,7 +160,7 @@ export function waitForElementsInnerHtmlToBe (elementSelector: string, value: st
   }
 }
 
-export function waitInMs (timeInMs: number) {
+export function waitInMs(timeInMs: number) {
   return async () => {
     if (!config) {
       const res = await fetch('/rest/admin/application-configuration')
@@ -145,7 +173,7 @@ export function waitInMs (timeInMs: number) {
   }
 }
 
-export function waitForAngularRouteToBeVisited (route: string) {
+export function waitForAngularRouteToBeVisited(route: string) {
   return async () => {
     while (true) {
       if (window.location.hash.startsWith(`#/${route}`)) {
@@ -156,7 +184,7 @@ export function waitForAngularRouteToBeVisited (route: string) {
   }
 }
 
-export function waitForLogIn () {
+export function waitForLogIn() {
   return async () => {
     while (true) {
       if (localStorage.getItem('token') !== null) {
@@ -167,7 +195,7 @@ export function waitForLogIn () {
   }
 }
 
-export function waitForAdminLogIn () {
+export function waitForAdminLogIn() {
   return async () => {
     while (true) {
       let role: string = ''
@@ -187,7 +215,7 @@ export function waitForAdminLogIn () {
   }
 }
 
-export function waitForLogOut () {
+export function waitForLogOut() {
   return async () => {
     while (true) {
       if (localStorage.getItem('token') === null) {
@@ -202,7 +230,7 @@ export function waitForLogOut () {
  * see https://stackoverflow.com/questions/7798748/find-out-whether-chrome-console-is-open/48287643#48287643
  * does detect when devtools are opened horizontally or vertically but not when undocked or open on page load
  */
-export function waitForDevTools () {
+export function waitForDevTools() {
   const initialInnerHeight = window.innerHeight
   const initialInnerWidth = window.innerWidth
   return async () => {
@@ -215,7 +243,7 @@ export function waitForDevTools () {
   }
 }
 
-export function waitForSelectToHaveValue (selectSelector: string, value: string) {
+export function waitForSelectToHaveValue(selectSelector: string, value: string) {
   return async () => {
     const selectElement: HTMLSelectElement = document.querySelector(
       selectSelector
@@ -230,7 +258,7 @@ export function waitForSelectToHaveValue (selectSelector: string, value: string)
   }
 }
 
-export function waitForSelectToNotHaveValue (selectSelector: string, value: string) {
+export function waitForSelectToNotHaveValue(selectSelector: string, value: string) {
   return async () => {
     const selectElement: HTMLSelectElement = document.querySelector(
       selectSelector
@@ -245,7 +273,7 @@ export function waitForSelectToNotHaveValue (selectSelector: string, value: stri
   }
 }
 
-export function waitForRightUriQueryParamPair (key: string, value: string) {
+export function waitForRightUriQueryParamPair(key: string, value: string) {
   return async () => {
     while (true) {
       const encodedValue: string = encodeURIComponent(value).replace(/%3A/g, ':')
