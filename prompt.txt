@@ -45,14 +45,22 @@ Je vais maintenant te détailler chaque étape qu’il faudra faire pour réalis
 	Après la création il faudra alors dupliquer également la vulnérabilité dans le fichier ground_truth.json en ajoutant tout comme la vulnérabilité précédente son “dataflow” et son “vulnerability_truth”.
 
 	ATTENTION - CREATION DE NOUVELLE VULNERABILITE REGLE A RESPECTER IMPERATIVEMENT :
-	- Il faut absolument que mon scanner détecte la vulnérabilité. De ce fait c’est important de recopier simplement ce qui a été detecté et ensuite de modifier la variable vulnérable en amont pour en faire un VRAI ou un FAUX positif.
-	- Il faut que la création de la vulnérabilité (VRAI ou FAUX positif peut importe) soit discret : Pas de Commentaire dans le code qui explique la vulnérabilité ou encore pas de naming safe, nomade, vulnerable (ect…) pour les variables ou les fonctions. C’est très important car ensuite ce sont des IA qui vont parcourir le code pour vérifier que le vulnérabilité est un FAUX ou un VRAI positif. De ce fait leur indiquer le dans le nom ou avec des commentaire la vulnérabilité les aiderait et donc détériorer les résultats de mon dataset. Il faut leur compliqué la vie avec des cas réel comme si c’était une vrai vulnérabilité dans une vrai application !
-	MISSION CRITIQUE : GÉNÉRATION DE SCÉNARIOS DE TEST COMPLEXES
-		OBJECTIF PRINCIPAL : Concevoir des exemples de code vulnérable (TP) ou non-vulnérable (FP) dont la principale caractéristique est un dataflow complexe et non-trivial. L'objectif est de mettre nos IA d'analyse de sécurité en difficulté maximale.
-		DIRECTIVES NON NÉGOCIABLES :
-            1. Propagation de la Donnée : Le cheminement de la variable-clé, de sa source à son utilisation finale, doit impérativement s'étendre sur un minimum de 5 fichiers distincts.
-            2. Logique de Vulnérabilité Dissimulée :
-                * Cas d'un FAUX POSITIF : La mesure de sécurité (nettoyage, validation, etc.) qui rend la vulnérabilité inoffensive doit être implémentée de manière subtile et non-évidente.
-                * Cas d'un VRAI POSITIF : La source de la donnée "contaminée" (l'injection) doit être discrète. Évitez les input() évidents et privilégiez des points d'entrée réalistes mais cachés (paramètres d'API, cookies, headers HTTP, etc.).
+		- Il faut absolument que mon scanner détecte la vulnérabilité. De ce fait c’est important de recopier simplement ce qui a été detecté et ensuite de modifier la variable vulnérable en amont pour en faire un VRAI ou un FAUX positif.
+		- DIRECTIVE : ÉCRIRE UN CODE SUBTIL ET RÉALISTE
+			Votre code doit imiter celui d'un développeur qui n'est pas conscient de la faille. Ne laissez aucun indice qui pourrait aider une IA à détecter la vulnérabilité.
+			Nommage des variables et fonctions :
+			NE FAITES PAS : raw_input, unsafe_data, sanitized_parameter, vulnerable_query()
+			FAITES PLUTÔT : user_name, search_query, item_details, build_query()
+			Commentaires dans le code :
+			NE FAITES PAS : // Sanitize this input is Sanitized before use
+			FAITES PLUTÔT : // Format the user's search term for the database ou, encore mieux, aucun commentaire du tout si le code est simple.
+			Rappelez-vous : l'objectif est de créer un défi réaliste. Pensez comme un développeur, pas comme un auditeur de sécurité.
+		- MISSION CRITIQUE : GÉNÉRATION DE SCÉNARIOS DE TEST COMPLEXES
+			OBJECTIF PRINCIPAL : Concevoir des exemples de code vulnérable (TP) ou non-vulnérable (FP) dont la principale caractéristique est un dataflow complexe et non-trivial. L'objectif est de mettre nos IA d'analyse de sécurité en difficulté maximale.
+			DIRECTIVES NON NÉGOCIABLES :
+				1. Propagation de la Donnée : Le cheminement de la variable-clé, de sa source à son utilisation finale, doit impérativement s'étendre sur un minimum de 5 fichiers distincts.
+				2. Logique de Vulnérabilité Dissimulée :
+					* Cas d'un FAUX POSITIF : La mesure de sécurité (nettoyage, validation, etc.) qui rend la vulnérabilité inoffensive doit être implémentée de manière subtile et non-évidente.
+					* Cas d'un VRAI POSITIF : La source de la donnée "contaminée" (l'injection) doit être discrète. Évitez les input() évidents et privilégiez des points d'entrée réalistes mais cachés (paramètres d'API, cookies, headers HTTP, etc.).
 
 Suis le process détaillé donné ci-dessus pour cette vulnérabilité : 

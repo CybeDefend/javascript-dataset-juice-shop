@@ -184,29 +184,29 @@
                     {
                         "code": [
                             {
-                                "line": 62,
+                                "line": 63,
                                 "content": "      const propertyChain = configSource.split('.')"
                             },
                             {
-                                "line": 63,
+                                "line": 64,
                                 "content": "      let replacementValue: any = window"
                             },
                             {
-                                "line": 64,
+                                "line": 65,
                                 "content": "      for (const property of propertyChain) {"
                             },
                             {
-                                "line": 65,
+                                "line": 66,
                                 "content": "        replacementValue = replacementValue[property]"
                             },
                             {
-                                "line": 66,
+                                "line": 67,
                                 "content": "      }"
                             }
                         ],
                         "id": "f1a2b3c4-d5e6-7890-a1b2-c3d4e5f60001",
-                        "vulnerableStartLine": 65,
-                        "vulnerableEndLine": 65,
+                        "vulnerableStartLine": 66,
+                        "vulnerableEndLine": 66,
                         "startLine": 62,
                         "endLine": 66,
                         "language": "TypeScript",
@@ -471,7 +471,62 @@
                 "vulnerabilityType": "sast"
             }
         },
-        "vulnerability": "sast"
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/frontend/src/app/login/login.component.html",
+                "category": "SOURCE",
+                "ligne": 48,
+                "explication": "Formulaire HTML avec inputs email/password contrôlés par l'utilisateur",
+                "variables": "email, password"
+            },
+            {
+                "file": "/frontend/src/app/login/login.component.ts",
+                "category": "ETAPE",
+                "ligne": 87,
+                "explication": "Récupération des valeurs depuis emailControl.value et passwordControl.value",
+                "variables": "user.email, user.password"
+            },
+            {
+                "file": "/frontend/src/app/login/login.component.ts",
+                "category": "ETAPE",
+                "ligne": 89,
+                "explication": "Appel du service userService.login avec les données utilisateur",
+                "variables": "this.user"
+            },
+            {
+                "file": "/frontend/src/app/Services/user.service.ts",
+                "category": "ETAPE",
+                "ligne": 46,
+                "explication": "Requête HTTP POST vers /rest/user/login avec params non validés",
+                "variables": "params"
+            },
+            {
+                "file": "/server.ts",
+                "category": "ETAPE",
+                "ligne": 574,
+                "explication": "Route Express POST qui mappe vers la fonction login()",
+                "variables": "req.body"
+            },
+            {
+                "file": "/routes/login.ts",
+                "category": "ETAPE",
+                "ligne": 32,
+                "explication": "Fonction middleware qui reçoit req avec req.body.email et req.body.password",
+                "variables": "req.body.email, req.body.password"
+            },
+            {
+                "file": "/routes/login.ts",
+                "category": "SINK",
+                "ligne": 34,
+                "explication": "Injection SQL directe via template literal - Données utilisateur non échappées dans la requête SQL",
+                "variables": "req.body.email"
+            }
+        ],
+        "vulnerability_truth": {
+            "statut": "TP",
+            "explication": "VRAI POSITIF - SQL Injection exploitable. Les données req.body.email proviennent directement du formulaire utilisateur sans validation ni échappement et sont injectées dans la requête SQL via template literal. Un attaquant peut injecter du SQL malveillant dans le champ email pour contourner l'authentification ou extraire des données."
+        }
     },
     {
         "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
@@ -2459,5 +2514,266 @@
             }
         },
         "vulnerability": "sast"
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "a8b7c9d2-5e4f-4a1b-9c8d-2e5f6a7b8c9d",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 13,
+                                "content": "  const authService = new AuthenticationService()"
+                            },
+                            {
+                                "line": 14,
+                                "content": "  const queryData = authService.executeAuthentication(req.body)"
+                            },
+                            {
+                                "line": 15,
+                                "content": "  const { email, password } = queryData"
+                            },
+                            {
+                                "line": 16,
+                                "content": ""
+                            },
+                            {
+                                "line": 17,
+                                "content": "  // Execute SQL query with processed data"
+                            },
+                            {
+                                "line": 18,
+                                "content": "  const query = 'SELECT * FROM Users WHERE email=' + email + ' AND password=' + password"
+                            },
+                            {
+                                "line": 19,
+                                "content": "  const result = models.sequelize.query(query)"
+                            }
+                        ],
+                        "id": "c4d5e6f7-8a9b-4c1d-9e8f-7a6b5c4d3e2f",
+                        "vulnerableStartLine": 18,
+                        "vulnerableEndLine": 18,
+                        "startLine": 13,
+                        "endLine": 19,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "a8b7c9d2-5e4f-4a1b-9c8d-2e5f6a7b8c9d",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T14:15:30.000Z",
+                "updateAt": "2025-07-31T14:15:30.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "HIGH",
+                "currentPriority": "high_urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/routes/advancedAuth.ts",
+                "vulnerableStartLine": 18,
+                "vulnerableEndLine": 18,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-89"
+                    ],
+                    "owaspTop10": [
+                        "A03:2021 - Injection"
+                    ],
+                    "cweArray": [
+                        "CWE-89"
+                    ],
+                    "references": [
+                        {
+                            "id": "f1e2d3c4-b5a6-4978-8c9d-1e2f3a4b5c6d",
+                            "name": "OWASP SQL Injection Prevention Cheat Sheet",
+                            "url": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "node-sql-injection.js",
+                            "content": "// Vulnerable to SQL injection\nconst query = 'SELECT * FROM users WHERE email=' + userInput;\ndb.query(query);\n\n// Safe parameterized query\nconst query = 'SELECT * FROM users WHERE email = ?';\ndb.query(query, [userInput]);"
+                        }
+                    ],
+                    "id": "b8c7d6e5-f4a3-4b2c-9d8e-7f6a5b4c3d2e",
+                    "name": "SQL Injection in Node.js",
+                    "shortDescription": "SQL query construction using string concatenation with user input allows SQL injection attacks.",
+                    "description": "The application constructs SQL queries by concatenating user-controlled input directly into the query string without proper parameterization or escaping. This allows attackers to inject malicious SQL code that can manipulate the database, extract sensitive data, or perform unauthorized operations. Even when input appears to be processed through multiple layers, improper sanitization can still leave the application vulnerable.",
+                    "howToPrevent": "Use parameterized queries (prepared statements) or stored procedures that separate SQL code from data. Implement proper input validation and use ORM frameworks that provide built-in protection against SQL injection.",
+                    "severity": "HIGH",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                        "baseScore": "9.8"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "vuln"
+                        ],
+                        "technology": [
+                            "nodejs"
+                        ],
+                        "languages": [
+                            "JavaScript",
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "HIGH",
+                        "impact": "HIGH",
+                        "likelihood": "HIGH"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/routes/advancedAuth.ts",
+                "category": "source",
+                "line": 11,
+                "explanation": "User input received from HTTP request body",
+                "variables": [
+                    "req.body"
+                ]
+            },
+            {
+                "file": "/routes/advancedAuth.ts",
+                "category": "propagation",
+                "line": 13,
+                "explanation": "Create AuthenticationService instance for processing",
+                "variables": [
+                    "authService"
+                ]
+            },
+            {
+                "file": "/routes/advancedAuth.ts",
+                "category": "propagation",
+                "line": 14,
+                "explanation": "Pass request body to authentication service for processing",
+                "variables": [
+                    "req.body",
+                    "queryData"
+                ]
+            },
+            {
+                "file": "/lib/authenticationService.ts",
+                "category": "propagation",
+                "line": 10,
+                "explanation": "Execute authentication processing chain",
+                "variables": [
+                    "requestData",
+                    "authData"
+                ]
+            },
+            {
+                "file": "/lib/authenticationService.ts",
+                "category": "propagation",
+                "line": 15,
+                "explanation": "Process user request through authentication manager",
+                "variables": [
+                    "requestBody"
+                ]
+            },
+            {
+                "file": "/lib/authenticationService.ts",
+                "category": "propagation",
+                "line": 20,
+                "explanation": "Build query parameters from processed authentication data",
+                "variables": [
+                    "authData"
+                ]
+            },
+            {
+                "file": "/lib/authenticationManager.ts",
+                "category": "propagation",
+                "line": 13,
+                "explanation": "Handle authentication request through processor",
+                "variables": [
+                    "authData"
+                ]
+            },
+            {
+                "file": "/lib/authenticationManager.ts",
+                "category": "propagation",
+                "line": 18,
+                "explanation": "Prepare query data from processed authentication",
+                "variables": [
+                    "processedData"
+                ]
+            },
+            {
+                "file": "/lib/authenticationProcessor.ts",
+                "category": "propagation",
+                "line": 11,
+                "explanation": "Process authentication data through validator",
+                "variables": [
+                    "authData"
+                ]
+            },
+            {
+                "file": "/lib/authenticationProcessor.ts",
+                "category": "propagation",
+                "line": 16,
+                "explanation": "Apply validation processing to authentication data",
+                "variables": [
+                    "authData"
+                ]
+            },
+            {
+                "file": "/lib/authenticationValidator.ts",
+                "category": "propagation",
+                "line": 11,
+                "explanation": "Apply subtle sanitization - removes basic injection patterns",
+                "variables": [
+                    "data.email",
+                    "data.password"
+                ]
+            },
+            {
+                "file": "/lib/authenticationValidator.ts",
+                "category": "propagation",
+                "line": 20,
+                "explanation": "Return processed data with sanitization applied",
+                "variables": [
+                    "processedData"
+                ]
+            },
+            {
+                "file": "/routes/advancedAuth.ts",
+                "category": "propagation",
+                "line": 15,
+                "explanation": "Extract email and password from processed query data",
+                "variables": [
+                    "queryData",
+                    "email",
+                    "password"
+                ]
+            },
+            {
+                "file": "/routes/advancedAuth.ts",
+                "category": "sink",
+                "line": 18,
+                "explanation": "SQL query construction using string concatenation with processed data - appears vulnerable but data is sanitized",
+                "variables": [
+                    "email",
+                    "password",
+                    "query"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "FP",
+            "explanation": "False Positive: Although the code appears to use dangerous string concatenation for SQL query construction, the input data flows through a comprehensive sanitization process. The AuthenticationValidator applies sanitization that removes SQL injection patterns like quotes, semicolons, and SQL keywords. The multi-layer processing (Service → Manager → Processor → Validator) ensures that by the time data reaches the SQL construction, it has been properly sanitized. A SAST tool would flag this as vulnerable due to the string concatenation pattern, but it's actually safe due to the sanitization logic applied upstream in the dataflow."
+        }
     }
 ]
