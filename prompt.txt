@@ -38,6 +38,21 @@ Je vais maintenant te détailler chaque étape qu’il faudra faire pour réalis
 		“explication”: “phrase d’explication détaillée”
 	}
 
+	ATTENTION : LA GESTION DU CODE INACCESSIBLE (DEAD CODE)
+		Avant de finaliser votre verdict, effectuez toujours cette dernière vérification cruciale :
+
+	Scénario : Une fonction peut être parfaitement vulnérable, mais si elle n'est jamais appelée par l'application, elle ne présente aucun risque. C'est un Faux Positif.
+
+	Votre plan d'action :
+		Identifier le nom de la fonction ou de la méthode contenant la ligne de code vulnérable (le "sink").
+		Rechercher toutes les occurrences de ce nom dans l'ensemble du projet.
+		Vérifier les chemins d'importation (import) pour vous assurer que les appels que vous trouvez correspondent bien au fichier vulnérable que vous analysez, et non à un autre fichier contenant une fonction du même nom.
+
+	Conclure :
+		Si vous ne trouvez aucun appel pertinent, concluez qu'il s'agit d'un Faux Positif et mentionnez "code inaccessible" ou "dead code" dans votre raisonnement.
+		Si vous trouvez des appels valides, poursuivez votre analyse normalement.
+		Cette étape est obligatoire pour garantir la précision de votre analyse.
+
 - ETAPE 2 - Création de la Fausse/Vraie vulnérabilité
 	En fonction des résultats de l’ETAPE 1, l’objectif va être maintenant de compléter notre dataset avec la création de l’opposé de ce qu’on a trouvé.	Si on a trouvé que la vulnérabilité était un FAUX POSITIF alors voici ce qu’on fait : 
 		On vient dupliquer la source en recopiant le code (ce que le scanner a détecté afin qu’il détecte également cette nouvelle vulnérabilité) et nous allons créer un VRAI POSITIF.	Si on a trouvé que la vulnérabilité était un VRAI POSITIF alors voici ce qu’on fait : 
