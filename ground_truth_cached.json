@@ -1,0 +1,2870 @@
+[
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "2413b6f6-1f32-4dca-ae73-2149988cf7f2",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 36,
+                                "content": "      let replacementValue = config"
+                            },
+                            {
+                                "line": 37,
+                                "content": "      for (const property of propertyChain) {"
+                            },
+                            {
+                                "line": 38,
+                                "content": "        replacementValue = replacementValue[property]"
+                            },
+                            {
+                                "line": 39,
+                                "content": "      }"
+                            },
+                            {
+                                "line": 40,
+                                "content": "      value = value.replace(options.replacement[0], replacementValue)"
+                            }
+                        ],
+                        "id": "560e18f2-8754-4255-a1c6-aa210f9590c8",
+                        "vulnerableStartLine": 38,
+                        "vulnerableEndLine": 38,
+                        "startLine": 36,
+                        "endLine": 40,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "2413b6f6-1f32-4dca-ae73-2149988cf7f2",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T11:27:11.000Z",
+                "updateAt": "2025-07-31T11:27:11.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "CRITICAL",
+                "currentPriority": "critical_urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/frontend/src/hacking-instructor/helpers/helpers.ts",
+                "vulnerableStartLine": 38,
+                "vulnerableEndLine": 38,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-915"
+                    ],
+                    "owaspTop10": [
+                        "A08:2021 - Software and Data Integrity Failures"
+                    ],
+                    "cweArray": [
+                        "CWE-915"
+                    ],
+                    "references": [
+                        {
+                            "id": "b105721d-33a3-4d30-9eff-2e468ff4757a",
+                            "name": "JavaScript Prototype Pollution Attack in Node.js paper",
+                            "url": "https://github.com/HoLyVieR/prototype-pollution-nsec18/blob/master/paper/JavaScript_prototype_pollution_attack_in_NodeJS.pdf"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "prototype-pollution-loop.js",
+                            "content": "function test1(name, value) {\n  if (name.indexOf('.') === -1) {\n    this.config[name] = value;\n    return this;\n  }\n  let config = this.config;\n  name = name.split('.');\n\n  const length = name.length;\n  name.forEach((item, index) => {\n    if (index === length - 1) {\n      config[item] = value;\n    } else {\n      if (!helper.isObject(config[item])) {\n        config[item] = {};\n      }\n      // ruleid:prototype-pollution-loop\n      config = config[item];\n    }\n  });\n  return this;\n}\n\nfunction test2(obj, props, value) {\n  if (typeof props == 'string') {\n    props = props.split('.');\n  }\n  if (typeof props == 'symbol') {\n    props = [props];\n  }\n  var lastProp = props.pop();\n  if (!lastProp) {\n    return false;\n  }\n  var thisProp;\n  while ((thisProp = props.shift())) {\n    if (typeof obj[thisProp] == 'undefined') {\n      obj[thisProp] = {};\n    }\n    // ruleid:prototype-pollution-loop\n    obj = obj[thisProp];\n    if (!obj || typeof obj != 'object') {\n      return false;\n    }\n  }\n  obj[lastProp] = value;\n  return true;\n}\n\nfunction test3(obj, prop, val) {\n  const segs = split(prop);\n  const last = segs.pop();\n  while (segs.length) {\n    const key = segs.shift();\n    // ruleid:prototype-pollution-loop\n    obj = obj[key] || (obj[key] = {});\n  }\n  obj[last] = val;\n}\n\nfunction okTest1(name) {\n  if (name.indexOf('.') === -1) {\n    this.config[name] = value;\n    return this;\n  }\n  let config = this.config;\n  name = name.split('.');\n\n  const length = name.length;\n  name.forEach((item, index) => {\n    // ok:prototype-pollution-loop\n    config = config[index];\n  });\n  return this;\n}\n\nfunction okTest2(name) {\n  let config = this.config;\n  name = name.split('.');\n\n  const length = name.length;\n  for (let i = 0; i < name.length; i++) {\n    // ok:prototype-pollution-loop\n    config = config[i];\n  }\n  return this;\n}\n"
+                        }
+                    ],
+                    "id": "9b18c770-17a4-485d-aed7-08ba645b1b2d",
+                    "name": "Prototype Pollution in Loop-Based Setter",
+                    "shortDescription": "Nested property setter functions fail to validate keys, allowing assignment to __proto__ or constructor.prototype and causing global prototype pollution.",
+                    "description": "These setter functions (`test1`, `test2`, `test3`) iterate over **nested property paths** without validating or sanitizing the path segments. When a user-supplied segment is `__proto__`, `constructor` or `prototype`, the code assigns into the **global Object prototype**, altering prototype attributes for all objects. This **prototype pollution** can be leveraged to override or inject critical methods (e.g. `toString`, `hasOwnProperty`), leading to unexpected behavior, security bypass or denial of service across the application.",
+                    "howToPrevent": "To prevent prototype pollution in loop-based assignment:\r\n\r\n1. **Validate path segments**: before each assignment, check segments against a blocklist (`__proto__`, `constructor`, `prototype`) and reject or sanitize invalid names.\r\n2. **Use prototype-less objects**: initialize your configuration container with `Object.create(null)` to avoid inheriting from `Object.prototype`.\r\n3. **Freeze critical prototypes**: apply `Object.freeze(Object.prototype)` early in application startup to block runtime modifications.\r\n4. **Use alternative data structures**: consider using `Map` instead of plain objects for arbitrary key storage.\r\n5. **Centralize setter logic**: implement or use a library function that handles nested path assignment with built-in prototype pollution defenses.",
+                    "severity": "CRITICAL",
+                    "language": "TypeScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:H",
+                        "baseScore": "10.0"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "audit"
+                        ],
+                        "technology": [
+                            "typescript"
+                        ],
+                        "languages": [
+                            "TypeScript",
+                            "JavaScript"
+                        ],
+                        "category": "security",
+                        "confidence": "LOW",
+                        "impact": "LOW",
+                        "likelihood": "LOW"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/routes/appConfiguration.ts",
+                "category": "SOURCE",
+                "ligne": 11,
+                "explication": "Configuration serveur exposée via API REST sans validation",
+                "variables": "config"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/helpers/helpers.ts",
+                "category": "ETAPE",
+                "ligne": 31,
+                "explication": "Fetch de la configuration depuis /rest/admin/application-configuration",
+                "variables": "res"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/helpers/helpers.ts",
+                "category": "ETAPE",
+                "ligne": 32,
+                "explication": "Parsing JSON et assignation à config global",
+                "variables": "json.config"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/challenges/loginBender.ts",
+                "category": "ETAPE",
+                "ligne": 68,
+                "explication": "Appel de waitForInputToHaveValue avec options.replacement=['juice-sh.op', 'application.domain']",
+                "variables": "options"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/index.ts",
+                "category": "ETAPE",
+                "ligne": 203,
+                "explication": "Exécution de hint.resolved() qui déclenche waitForInputToHaveValue",
+                "variables": "hint.resolved"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/helpers/helpers.ts",
+                "category": "ETAPE",
+                "ligne": 35,
+                "explication": "Création de propertyChain par split('.') depuis options.replacement[1]",
+                "variables": "propertyChain"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/helpers/helpers.ts",
+                "category": "ETAPE",
+                "ligne": 36,
+                "explication": "Initialisation de replacementValue avec l'objet config",
+                "variables": "replacementValue"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/helpers/helpers.ts",
+                "category": "SINK",
+                "ligne": 38,
+                "explication": "Accès non validé aux propriétés via replacementValue[property] - Potential Prototype Pollution",
+                "variables": "replacementValue[property]"
+            }
+        ],
+        "vulnerability_truth": {
+            "statut": "FP",
+            "explication": "Les données proviennent d'une configuration serveur contrôlée, pas d'entrées utilisateur malveillantes"
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "02c1699f-49f5-4070-a6fe-1ce177b6ccd8",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 63,
+                                "content": "      const propertyChain = configSource.split('.')"
+                            },
+                            {
+                                "line": 64,
+                                "content": "      let replacementValue: any = window"
+                            },
+                            {
+                                "line": 65,
+                                "content": "      for (const property of propertyChain) {"
+                            },
+                            {
+                                "line": 66,
+                                "content": "        replacementValue = replacementValue[property]"
+                            },
+                            {
+                                "line": 67,
+                                "content": "      }"
+                            }
+                        ],
+                        "id": "f1a2b3c4-d5e6-7890-a1b2-c3d4e5f60001",
+                        "vulnerableStartLine": 66,
+                        "vulnerableEndLine": 66,
+                        "startLine": 62,
+                        "endLine": 66,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "02c1699f-49f5-4070-a6fe-1ce177b6ccd8",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-08-01T11:27:11.000Z",
+                "updateAt": "2025-08-01T11:27:11.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "CRITICAL",
+                "currentPriority": "critical_urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/frontend/src/hacking-instructor/helpers/helpers.ts",
+                "vulnerableStartLine": 65,
+                "vulnerableEndLine": 65,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-915"
+                    ],
+                    "owaspTop10": [
+                        "A08:2021 - Software and Data Integrity Failures"
+                    ],
+                    "cweArray": [
+                        "CWE-915"
+                    ],
+                    "references": [
+                        {
+                            "id": "b105721d-33a3-4d30-9eff-2e468ff4757a",
+                            "name": "JavaScript Prototype Pollution Attack in Node.js paper",
+                            "url": "https://github.com/HoLyVieR/prototype-pollution-nsec18/blob/master/paper/JavaScript_prototype_pollution_attack_in_NodeJS.pdf"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "prototype-pollution-loop.js",
+                            "content": "function test1(name, value) {\n  if (name.indexOf('.') === -1) {\n    this.config[name] = value;\n    return this;\n  }\n  let config = this.config;\n  name = name.split('.');\n\n  const length = name.length;\n  name.forEach((item, index) => {\n    if (index === length - 1) {\n      config[item] = value;\n    } else {\n      if (!helper.isObject(config[item])) {\n        config[item] = {};\n      }\n      // ruleid:prototype-pollution-loop\n      config = config[item];\n    }\n  });\n  return this;\n}\n\nfunction test2(obj, props, value) {\n  if (typeof props == 'string') {\n    props = props.split('.');\n  }\n  if (typeof props == 'symbol') {\n    props = [props];\n  }\n  var lastProp = props.pop();\n  if (!lastProp) {\n    return false;\n  }\n  var thisProp;\n  while ((thisProp = props.shift())) {\n    if (typeof obj[thisProp] == 'undefined') {\n      obj[thisProp] = {};\n    }\n    // ruleid:prototype-pollution-loop\n    obj = obj[thisProp];\n    if (!obj || typeof obj != 'object') {\n      return false;\n    }\n  }\n  obj[lastProp] = value;\n  return true;\n}\n\nfunction test3(obj, prop, val) {\n  const segs = split(prop);\n  const last = segs.pop();\n  while (segs.length) {\n    const key = segs.shift();\n    // ruleid:prototype-pollution-loop\n    obj = obj[key] || (obj[key] = {});\n  }\n  obj[last] = val;\n}\n\nfunction okTest1(name) {\n  if (name.indexOf('.') === -1) {\n    this.config[name] = value;\n    return this;\n  }\n  let config = this.config;\n  name = name.split('.');\n\n  const length = name.length;\n  name.forEach((item, index) => {\n    // ok:prototype-pollution-loop\n    config = config[index];\n  });\n  return this;\n}\n\nfunction okTest2(name) {\n  let config = this.config;\n  name = name.split('.');\n\n  const length = name.length;\n  for (let i = 0; i < name.length; i++) {\n    // ok:prototype-pollution-loop\n    config = config[i];\n  }\n  return this;\n}\n"
+                        }
+                    ],
+                    "id": "9b18c770-17a4-485d-aed7-08ba645b1b2d",
+                    "name": "Prototype Pollution in Loop-Based Setter",
+                    "shortDescription": "Nested property setter functions fail to validate keys, allowing assignment to __proto__ or constructor.prototype and causing global prototype pollution.",
+                    "description": "These setter functions (`test1`, `test2`, `test3`) iterate over **nested property paths** without validating or sanitizing the path segments. When a user-supplied segment is `__proto__`, `constructor` or `prototype`, the code assigns into the **global Object prototype**, altering prototype attributes for all objects. This **prototype pollution** can be leveraged to override or inject critical methods (e.g. `toString`, `hasOwnProperty`), leading to unexpected behavior, security bypass or denial of service across the application.",
+                    "howToPrevent": "To prevent prototype pollution in loop-based assignment:\r\n\r\n1. **Validate path segments**: before each assignment, check segments against a blocklist (`__proto__`, `constructor`, `prototype`) and reject or sanitize invalid names.\r\n2. **Use prototype-less objects**: initialize your configuration container with `Object.create(null)` to avoid inheriting from `Object.prototype`.\r\n3. **Freeze critical prototypes**: apply `Object.freeze(Object.prototype)` early in application startup to block runtime modifications.\r\n4. **Use alternative data structures**: consider using `Map` instead of plain objects for arbitrary key storage.\r\n5. **Centralize setter logic**: implement or use a library function that handles nested path assignment with built-in prototype pollution defenses.",
+                    "severity": "CRITICAL",
+                    "language": "TypeScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:H",
+                        "baseScore": "10.0"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "audit"
+                        ],
+                        "technology": [
+                            "typescript"
+                        ],
+                        "languages": [
+                            "TypeScript",
+                            "JavaScript"
+                        ],
+                        "category": "security",
+                        "confidence": "LOW",
+                        "impact": "LOW",
+                        "likelihood": "LOW"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/frontend/src/hacking-instructor/tutorial/tutorialManager.ts",
+                "category": "SOURCE",
+                "ligne": 13,
+                "explication": "Paramètre URL stepConfig contrôlé par l'utilisateur",
+                "variables": "stepConfig"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/tutorial/tutorialManager.ts",
+                "category": "ETAPE",
+                "ligne": 17,
+                "explication": "Parsing JSON des données utilisateur sans validation",
+                "variables": "parsedConfig"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/tutorial/tutorialManager.ts",
+                "category": "ETAPE",
+                "ligne": 18,
+                "explication": "Passage des données parsées à processStepConfiguration",
+                "variables": "parsedConfig"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/tutorial/tutorialManager.ts",
+                "category": "ETAPE",
+                "ligne": 26,
+                "explication": "Itération sur les steps et appel de createTutorialStep",
+                "variables": "stepData"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/tutorial/tutorialConfig.ts",
+                "category": "ETAPE",
+                "ligne": 18,
+                "explication": "Appel de waitForInputToMatchPattern avec stepData.validationPath",
+                "variables": "stepData.validationPath"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/helpers/helpers.ts",
+                "category": "ETAPE",
+                "ligne": 61,
+                "explication": "Récupération du paramètre URL configSrc contrôlé par l'utilisateur",
+                "variables": "configSource"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/helpers/helpers.ts",
+                "category": "ETAPE",
+                "ligne": 62,
+                "explication": "Création de propertyChain par split('.') depuis configSource",
+                "variables": "propertyChain"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/helpers/helpers.ts",
+                "category": "ETAPE",
+                "ligne": 63,
+                "explication": "Initialisation de replacementValue avec l'objet window global",
+                "variables": "replacementValue"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/helpers/helpers.ts",
+                "category": "SINK",
+                "ligne": 65,
+                "explication": "Accès non validé aux propriétés via replacementValue[property] - Prototype Pollution exploitable",
+                "variables": "replacementValue[property]"
+            }
+        ],
+        "vulnerability_truth": {
+            "statut": "TP",
+            "explication": "Prototype pollution exploitable via paramètres URL contrôlés par l'utilisateur. VRAI POSITIF car un attaquant peut injecter ?configSrc=__proto__.polluted pour polluer le prototype global"
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "24416c39-835d-4da9-9c6a-fd790ed202a6",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 32,
+                                "content": "  return (req: Request, res: Response, next: NextFunction) => {"
+                            },
+                            {
+                                "line": 33,
+                                "content": "    verifyPreLoginChallenges(req) // vuln-code-snippet hide-line"
+                            },
+                            {
+                                "line": 34,
+                                "content": "    models.sequelize.query(`SELECT * FROM Users WHERE email = '${req.body.email || ''}' AND password = '${security.hash(req.body.password || '')}' AND deletedAt IS NULL`, { model: UserModel, plain: true }) // vuln-code-snippet vuln-line loginAdminChallenge loginBenderChallenge loginJimChallenge"
+                            },
+                            {
+                                "line": 35,
+                                "content": "      .then((authenticatedUser) => { // vuln-code-snippet neutral-line loginAdminChallenge loginBenderChallenge loginJimChallenge"
+                            },
+                            {
+                                "line": 36,
+                                "content": "        const user = utils.queryResultToJson(authenticatedUser)"
+                            }
+                        ],
+                        "id": "335f4a25-22dd-4ef0-a82d-1403f9278694",
+                        "vulnerableStartLine": 34,
+                        "vulnerableEndLine": 34,
+                        "startLine": 32,
+                        "endLine": 36,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "24416c39-835d-4da9-9c6a-fd790ed202a6",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T11:27:12.000Z",
+                "updateAt": "2025-07-31T11:27:12.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "CRITICAL",
+                "currentPriority": "critical_urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/routes/login.ts",
+                "vulnerableStartLine": 34,
+                "vulnerableEndLine": 34,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-89"
+                    ],
+                    "owaspTop10": [
+                        "A01:2017 - Injection",
+                        "A03:2021 - Injection"
+                    ],
+                    "cweArray": [
+                        "CWE-89"
+                    ],
+                    "references": [
+                        {
+                            "id": "938f6798-3d60-44b1-9b0a-e01b7775de3f",
+                            "name": "Sequelize Raw Queries – Replacements",
+                            "url": "https://sequelize.org/docs/v6/core-concepts/raw-queries/#replacements"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "sequelize-injection-express.ts",
+                            "content": "import m = require('../m/index')\nimport { Request, Response, NextFunction } from 'express'\n\nmodule.exports = function search () {\n  return (req: Request, res: Response, next: NextFunction) => {\n    let criteria = req.query.foo\n    // ok: express-sequelize-injection\n    m.sequelize.query(\n      'SELECT * FROM projects WHERE status = ?',\n      {\n        replacements: [req.body.foo],\n        type: QueryTypes.SELECT\n      }\n    )\n    // ok: express-sequelize-injection\n    m.sequelize.query(\n      'SELECT * FROM projects WHERE status = ?',\n      {\n        replacements: [req.body.foo],\n        type: QueryTypes.SELECT\n      }\n    )\n    let obj =  {\n        replacements: [req.body.foo],\n        type: QueryTypes.SELECT\n      }\n    // ok: express-sequelize-injection\n    let projects = 'projects'\n      sequelize.query(\n        `SELECT * FROM ${projects} WHERE status = ?`,\n        obj\n      )\n    // ruleid: express-sequelize-injection\n    m.sequelize.query(`SELECT * FROM Foo WHERE ((criteria LIKE '%${criteria}%))`) \n    // ruleid: express-sequelize-injection\n    sequelize.query(`SELECT * FROM Foo WHERE ((criteria LIKE '%${obj.replacements[0]}%))`) \n  }\n}"
+                        }
+                    ],
+                    "id": "9638a945-c68a-483b-accb-2e84160840a1",
+                    "name": "Sequelize SQL Injection via Tainted Query",
+                    "shortDescription": "User-controlled input is directly interpolated into a Sequelize raw query, enabling SQL injection.",
+                    "description": "**Root Cause**: The application constructs raw SQL using template literals with unvalidated user input (`req.query.foo`) passed directly into `sequelize.query`. This allows an attacker to inject arbitrary SQL.  \r\n\r\n**Mechanism**: The backtick interpolation (`${criteria}`) inserts unsanitized data into the query string. When executed, the database engine parses injected fragments as part of the SQL command.  \r\n\r\n**Risks**:  \r\n- **Data Exfiltration**: Unauthorized read access to all database tables.  \r\n- **Data Manipulation**: Potential for INSERT, UPDATE, DELETE operations.  \r\n- **Privilege Escalation**: Execution of administrative commands if the DB user has elevated rights.  \r\n- **Denial of Service**: Dropping tables or locking resources.",
+                    "howToPrevent": "- Use **parameterized queries** or **prepared statements** instead of string interpolation.  \r\n  ```js\r\n  // Safe: replacements ensure proper escaping\r\n  const [results] = await sequelize.query(\r\n    'SELECT * FROM Foo WHERE criteria LIKE :search',\r\n    {\r\n      replacements: { search: `%${req.query.foo}%` },\r\n      type: QueryTypes.SELECT\r\n    }\r\n  );\r\n  ```  \r\n- Validate and sanitize input: enforce type, length, and pattern checks on query parameters before use.  \r\n- Use ORM methods where possible (`Model.findAll({ where: { criteria: { [Op.like]: `%${value}%` } } })`) to leverage built-in escaping.  \r\n- Employ an input **allowlist** for expected values and reject unexpected characters.",
+                    "severity": "CRITICAL",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                        "baseScore": "9.8"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "vuln"
+                        ],
+                        "technology": [
+                            "express"
+                        ],
+                        "languages": [
+                            "JavaScript",
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "HIGH",
+                        "impact": "HIGH",
+                        "likelihood": "HIGH"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/frontend/src/app/login/login.component.html",
+                "category": "SOURCE",
+                "ligne": 48,
+                "explication": "Formulaire HTML avec inputs email/password contrôlés par l'utilisateur",
+                "variables": "email, password"
+            },
+            {
+                "file": "/frontend/src/app/login/login.component.ts",
+                "category": "ETAPE",
+                "ligne": 87,
+                "explication": "Récupération des valeurs depuis emailControl.value et passwordControl.value",
+                "variables": "user.email, user.password"
+            },
+            {
+                "file": "/frontend/src/app/login/login.component.ts",
+                "category": "ETAPE",
+                "ligne": 89,
+                "explication": "Appel du service userService.login avec les données utilisateur",
+                "variables": "this.user"
+            },
+            {
+                "file": "/frontend/src/app/Services/user.service.ts",
+                "category": "ETAPE",
+                "ligne": 46,
+                "explication": "Requête HTTP POST vers /rest/user/login avec params non validés",
+                "variables": "params"
+            },
+            {
+                "file": "/server.ts",
+                "category": "ETAPE",
+                "ligne": 574,
+                "explication": "Route Express POST qui mappe vers la fonction login()",
+                "variables": "req.body"
+            },
+            {
+                "file": "/routes/login.ts",
+                "category": "ETAPE",
+                "ligne": 32,
+                "explication": "Fonction middleware qui reçoit req avec req.body.email et req.body.password",
+                "variables": "req.body.email, req.body.password"
+            },
+            {
+                "file": "/routes/login.ts",
+                "category": "SINK",
+                "ligne": 34,
+                "explication": "Injection SQL directe via template literal - Données utilisateur non échappées dans la requête SQL",
+                "variables": "req.body.email"
+            }
+        ],
+        "vulnerability_truth": {
+            "statut": "TP",
+            "explication": "VRAI POSITIF - SQL Injection exploitable. Les données req.body.email proviennent directement du formulaire utilisateur sans validation ni échappement et sont injectées dans la requête SQL via template literal. Un attaquant peut injecter du SQL malveillant dans le champ email pour contourner l'authentification ou extraire des données."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "a8b7c9d2-5e4f-4a1b-9c8d-2e5f6a7b8c9d",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 13,
+                                "content": "  const authService = new AuthenticationService()"
+                            },
+                            {
+                                "line": 14,
+                                "content": "  const queryData = authService.executeAuthentication(req.body)"
+                            },
+                            {
+                                "line": 15,
+                                "content": "  const { email, password } = queryData"
+                            },
+                            {
+                                "line": 16,
+                                "content": ""
+                            },
+                            {
+                                "line": 17,
+                                "content": "  // Execute SQL query with processed data"
+                            },
+                            {
+                                "line": 18,
+                                "content": "  const query = 'SELECT * FROM Users WHERE email=' + email + ' AND password=' + password"
+                            },
+                            {
+                                "line": 19,
+                                "content": "  const result = models.sequelize.query(query)"
+                            }
+                        ],
+                        "id": "c4d5e6f7-8a9b-4c1d-9e8f-7a6b5c4d3e2f",
+                        "vulnerableStartLine": 18,
+                        "vulnerableEndLine": 18,
+                        "startLine": 13,
+                        "endLine": 19,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "a8b7c9d2-5e4f-4a1b-9c8d-2e5f6a7b8c9d",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T14:15:30.000Z",
+                "updateAt": "2025-07-31T14:15:30.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "HIGH",
+                "currentPriority": "high_urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/routes/advancedAuth.ts",
+                "vulnerableStartLine": 18,
+                "vulnerableEndLine": 18,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-89"
+                    ],
+                    "owaspTop10": [
+                        "A03:2021 - Injection"
+                    ],
+                    "cweArray": [
+                        "CWE-89"
+                    ],
+                    "references": [
+                        {
+                            "id": "f1e2d3c4-b5a6-4978-8c9d-1e2f3a4b5c6d",
+                            "name": "OWASP SQL Injection Prevention Cheat Sheet",
+                            "url": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "node-sql-injection.js",
+                            "content": "// Vulnerable to SQL injection\nconst query = 'SELECT * FROM users WHERE email=' + userInput;\ndb.query(query);\n\n// Safe parameterized query\nconst query = 'SELECT * FROM users WHERE email = ?';\ndb.query(query, [userInput]);"
+                        }
+                    ],
+                    "id": "b8c7d6e5-f4a3-4b2c-9d8e-7f6a5b4c3d2e",
+                    "name": "SQL Injection in Node.js",
+                    "shortDescription": "SQL query construction using string concatenation with user input allows SQL injection attacks.",
+                    "description": "The application constructs SQL queries by concatenating user-controlled input directly into the query string without proper parameterization or escaping. This allows attackers to inject malicious SQL code that can manipulate the database, extract sensitive data, or perform unauthorized operations. Even when input appears to be processed through multiple layers, improper sanitization can still leave the application vulnerable.",
+                    "howToPrevent": "Use parameterized queries (prepared statements) or stored procedures that separate SQL code from data. Implement proper input validation and use ORM frameworks that provide built-in protection against SQL injection.",
+                    "severity": "HIGH",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                        "baseScore": "9.8"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "vuln"
+                        ],
+                        "technology": [
+                            "nodejs"
+                        ],
+                        "languages": [
+                            "JavaScript",
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "HIGH",
+                        "impact": "HIGH",
+                        "likelihood": "HIGH"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/routes/advancedAuth.ts",
+                "category": "source",
+                "line": 11,
+                "explanation": "User input received from HTTP request body",
+                "variables": [
+                    "req.body"
+                ]
+            },
+            {
+                "file": "/routes/advancedAuth.ts",
+                "category": "propagation",
+                "line": 13,
+                "explanation": "Create AuthenticationService instance for processing",
+                "variables": [
+                    "authService"
+                ]
+            },
+            {
+                "file": "/routes/advancedAuth.ts",
+                "category": "propagation",
+                "line": 14,
+                "explanation": "Pass request body to authentication service for processing",
+                "variables": [
+                    "req.body",
+                    "queryData"
+                ]
+            },
+            {
+                "file": "/lib/authenticationService.ts",
+                "category": "propagation",
+                "line": 10,
+                "explanation": "Execute authentication processing chain",
+                "variables": [
+                    "requestData",
+                    "authData"
+                ]
+            },
+            {
+                "file": "/lib/authenticationService.ts",
+                "category": "propagation",
+                "line": 15,
+                "explanation": "Process user request through authentication manager",
+                "variables": [
+                    "requestBody"
+                ]
+            },
+            {
+                "file": "/lib/authenticationService.ts",
+                "category": "propagation",
+                "line": 20,
+                "explanation": "Build query parameters from processed authentication data",
+                "variables": [
+                    "authData"
+                ]
+            },
+            {
+                "file": "/lib/authenticationManager.ts",
+                "category": "propagation",
+                "line": 13,
+                "explanation": "Handle authentication request through processor",
+                "variables": [
+                    "authData"
+                ]
+            },
+            {
+                "file": "/lib/authenticationManager.ts",
+                "category": "propagation",
+                "line": 18,
+                "explanation": "Prepare query data from processed authentication",
+                "variables": [
+                    "processedData"
+                ]
+            },
+            {
+                "file": "/lib/authenticationProcessor.ts",
+                "category": "propagation",
+                "line": 11,
+                "explanation": "Process authentication data through validator",
+                "variables": [
+                    "authData"
+                ]
+            },
+            {
+                "file": "/lib/authenticationProcessor.ts",
+                "category": "propagation",
+                "line": 16,
+                "explanation": "Apply validation processing to authentication data",
+                "variables": [
+                    "authData"
+                ]
+            },
+            {
+                "file": "/lib/authenticationValidator.ts",
+                "category": "propagation",
+                "line": 11,
+                "explanation": "Apply subtle sanitization - removes basic injection patterns",
+                "variables": [
+                    "data.email",
+                    "data.password"
+                ]
+            },
+            {
+                "file": "/lib/authenticationValidator.ts",
+                "category": "propagation",
+                "line": 20,
+                "explanation": "Return processed data with sanitization applied",
+                "variables": [
+                    "processedData"
+                ]
+            },
+            {
+                "file": "/routes/advancedAuth.ts",
+                "category": "propagation",
+                "line": 15,
+                "explanation": "Extract email and password from processed query data",
+                "variables": [
+                    "queryData",
+                    "email",
+                    "password"
+                ]
+            },
+            {
+                "file": "/routes/advancedAuth.ts",
+                "category": "sink",
+                "line": 18,
+                "explanation": "SQL query construction using string concatenation with processed data - appears vulnerable but data is sanitized",
+                "variables": [
+                    "email",
+                    "password",
+                    "query"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "FP",
+            "explanation": "False Positive: Although the code appears to use dangerous string concatenation for SQL query construction, the input data flows through a comprehensive sanitization process. The AuthenticationValidator applies sanitization that removes SQL injection patterns like quotes, semicolons, and SQL keywords. The multi-layer processing (Service → Manager → Processor → Validator) ensures that by the time data reaches the SQL construction, it has been properly sanitized. A SAST tool would flag this as vulnerable due to the string concatenation pattern, but it's actually safe due to the sanitization logic applied upstream in the dataflow."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "2bece71b-3d5f-436e-a64b-a9aa0aa56a74",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 21,
+                                "content": "        const sandbox = { safeEval, orderLinesData }"
+                            },
+                            {
+                                "line": 22,
+                                "content": "        vm.createContext(sandbox)"
+                            },
+                            {
+                                "line": 23,
+                                "content": "        vm.runInContext('safeEval(orderLinesData)', sandbox, { timeout: 2000 })"
+                            },
+                            {
+                                "line": 24,
+                                "content": "        res.json({ cid: body.cid, orderNo: uniqueOrderNumber(), paymentDue: dateTwoWeeksFromNow() })"
+                            },
+                            {
+                                "line": 25,
+                                "content": "      } catch (err) {"
+                            }
+                        ],
+                        "id": "a591e4cb-4670-4478-8a25-567857e61e3f",
+                        "vulnerableStartLine": 23,
+                        "vulnerableEndLine": 23,
+                        "startLine": 21,
+                        "endLine": 25,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "2bece71b-3d5f-436e-a64b-a9aa0aa56a74",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T11:27:12.000Z",
+                "updateAt": "2025-07-31T11:27:12.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "CRITICAL",
+                "currentPriority": "critical_urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/routes/b2bOrder.ts",
+                "vulnerableStartLine": 23,
+                "vulnerableEndLine": 23,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-1104"
+                    ],
+                    "owaspTop10": [
+                        "A06:2021 - Vulnerable and Outdated Components"
+                    ],
+                    "cweArray": [
+                        "CWE-1104"
+                    ],
+                    "references": [
+                        {
+                            "id": "1bfe7342-994b-426a-8dea-9dec2db79283",
+                            "name": "notevil GitHub repository",
+                            "url": "https://github.com/mmckegg/notevil"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "express-detect-notevil-usage.ts",
+                            "content": "/*\n * Copyright (c) 2014-2022 Bjoern Kimminich & the OWASP Juice Shop contributors.\n * SPDX-License-Identifier: MIT\n */\n\nimport vm = require('vm')\nimport { Request, Response, NextFunction } from 'express'\n\nconst utils = require('../lib/utils')\nconst security = require('../lib/insecurity')\nconst safeEval = require('notevil')\nconst challenges = require('../data/datacache').challenges\n\nmodule.exports = function b2bOrder () {\n  return ({ body }: Request, res: Response, next: NextFunction) => {\n    if (!utils.disableOnContainerEnv()) {\n      const orderLinesData = body.orderLinesData || ''\n      try {\n        const sandbox = { safeEval, orderLinesData }\n        vm.createContext(sandbox)\n        \n        // ruleid: express-detect-notevil-usage\n        vm.runInContext(\"safeEval(orderLinesData)\", sandbox, { timeout: 2000 })\n        // ruleid: express-detect-notevil-usage\n        safeEval(orderLinesData)\n        // ok\n        vm.runInContext(\"safeEval('orderLinesData')\", sandbox, { timeout: 2000 }) // ignore hardcoded strings in semgrep\n        // ok\n        safeEval('orderLinesData')\n        res.json({ cid: body.cid, orderNo: uniqueOrderNumber(), paymentDue: dateTwoWeeksFromNow() })\n      } catch (err) {\n        if (err.message?.match(/Script execution timed out.*/)) {\n          utils.solveIf(challenges.rceOccupyChallenge, () => { return true })\n          res.status(503)\n          next(new Error('Sorry, we are temporarily not available! Please try again later.'))\n        } else {\n          utils.solveIf(challenges.rceChallenge, () => { return err.message === 'Infinite loop detected - reached max iterations' })\n          next(err)\n        }\n      }\n    } else {\n      res.json({ cid: body.cid, orderNo: uniqueOrderNumber(), paymentDue: dateTwoWeeksFromNow() })\n    }\n  }\n\n  function uniqueOrderNumber () {\n    return security.hash(new Date() + '_B2B')\n  }\n\n  function dateTwoWeeksFromNow () {\n    return new Date(new Date().getTime() + (14 * 24 * 60 * 60 * 1000)).toISOString()\n  }\n}\n"
+                        }
+                    ],
+                    "id": "b4430f7a-89b2-4807-bad5-68d46e2ff9f4",
+                    "name": "Untrusted code execution via notevil package",
+                    "shortDescription": "Use of the unmaintained notevil package and eval functions on untrusted input allows arbitrary code execution in the server context.",
+                    "description": "This vulnerability arises from the use of the unmaintained `notevil` package and direct invocation of **eval**-style functions with attacker-controlled input. In the provided code, user data in `orderLinesData` is passed to `vm.runInContext(\"safeEval(orderLinesData)\", ...)` and to `safeEval(orderLinesData)` without validation. This allows an attacker to execute arbitrary JavaScript in the server process, leading to full compromise of confidentiality, integrity, and availability. The root cause is executing untrusted input in a sandbox that has no effective hardening or input controls, combined with reliance on a package with no recent maintenance or security reviews.",
+                    "howToPrevent": "1. Use **no-eval** design:\r\n   - Avoid any use of `eval`, `vm.runInContext`, or similar dynamic code execution APIs.\r\n2. Whitelist or parse input:\r\n   - If dynamic expressions are required, implement a custom parser or interpreter that only supports a safe subset of operations.\r\n3. Use a maintained sandbox library:\r\n   - If sandboxed evaluation is unavoidable, switch to a well-maintained package that applies strict context isolation and resource limits.\r\n4. Validate and sanitize input:\r\n   - Reject or sanitize any characters or patterns that could alter execution flow (e.g., function constructors, loop constructs).\r\n5. Apply the principle of least privilege:\r\n   - Run evaluation contexts under separate processes or containers with minimal privileges and strict time/memory constraints.",
+                    "severity": "CRITICAL",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                        "baseScore": "9.8"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "audit"
+                        ],
+                        "technology": [
+                            "javascript",
+                            "typescript"
+                        ],
+                        "languages": [
+                            "JavaScript",
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "LOW",
+                        "impact": "HIGH",
+                        "likelihood": "LOW"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/server.ts",
+                "category": "source",
+                "line": 625,
+                "explanation": "Route Express POST /b2b/v2/orders reçoit les données utilisateur",
+                "variables": [
+                    "req.body"
+                ]
+            },
+            {
+                "file": "/routes/b2bOrder.ts",
+                "category": "propagation",
+                "line": 17,
+                "explanation": "Fonction b2bOrder reçoit le body de la requête HTTP",
+                "variables": [
+                    "body"
+                ]
+            },
+            {
+                "file": "/routes/b2bOrder.ts",
+                "category": "propagation",
+                "line": 19,
+                "explanation": "Extraction de orderLinesData depuis body.orderLinesData sans validation",
+                "variables": [
+                    "body.orderLinesData",
+                    "orderLinesData"
+                ]
+            },
+            {
+                "file": "/routes/b2bOrder.ts",
+                "category": "propagation",
+                "line": 21,
+                "explanation": "Création du sandbox avec orderLinesData non validé",
+                "variables": [
+                    "orderLinesData",
+                    "sandbox"
+                ]
+            },
+            {
+                "file": "/routes/b2bOrder.ts",
+                "category": "propagation",
+                "line": 22,
+                "explanation": "Création du contexte VM pour l'exécution",
+                "variables": [
+                    "sandbox"
+                ]
+            },
+            {
+                "file": "/routes/b2bOrder.ts",
+                "category": "sink",
+                "line": 23,
+                "explanation": "Exécution de code utilisateur non validé via vm.runInContext avec safeEval - RCE exploitable",
+                "variables": [
+                    "orderLinesData"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "TP",
+            "explanation": "VRAI POSITIF - Remote Code Execution exploitable. Les données orderLinesData proviennent directement du body HTTP sans aucune validation et sont passées à vm.runInContext avec safeEval (notevil). Malgré le nom 'safeEval', la librairie notevil a des contournements connus et permet l'exécution de code JavaScript arbitraire. Les tests montrent des payloads RCE fonctionnels : '(function dos() { while(true); })()' pour DoS et d'autres pour l'exécution de code. Un attaquant peut exécuter du code JavaScript arbitraire sur le serveur."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "633bc473-e052-46b4-8277-4af0c2461a90",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 4,
+                                "content": "    criteria = (criteria.length <= 200) ? criteria : criteria.substring(0, 200)"
+                            },
+                            {
+                                "line": 5,
+                                "content": "    criteria.replace(/\"|'|;|and|or/i, \"\")"
+                            },
+                            {
+                                "line": 6,
+                                "content": "    models.sequelize.query(`SELECT * FROM Products WHERE ((name LIKE '%${criteria}%' OR description LIKE '%${criteria}%') AND deletedAt IS NULL) ORDER BY name`)"
+                            },
+                            {
+                                "line": 7,
+                                "content": "      .then(([products]: any) => {"
+                            },
+                            {
+                                "line": 8,
+                                "content": "        const dataString = JSON.stringify(products)"
+                            }
+                        ],
+                        "id": "282cef9d-c5c9-4556-ba03-f8fc02fd38f5",
+                        "vulnerableStartLine": 6,
+                        "vulnerableEndLine": 6,
+                        "startLine": 4,
+                        "endLine": 8,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "633bc473-e052-46b4-8277-4af0c2461a90",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T11:27:11.000Z",
+                "updateAt": "2025-07-31T11:27:11.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "CRITICAL",
+                "currentPriority": "critical_urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/data/static/codefixes/unionSqlInjectionChallenge_1.ts",
+                "vulnerableStartLine": 6,
+                "vulnerableEndLine": 6,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-89"
+                    ],
+                    "owaspTop10": [
+                        "A01:2017 - Injection",
+                        "A03:2021 - Injection"
+                    ],
+                    "cweArray": [
+                        "CWE-89"
+                    ],
+                    "references": [
+                        {
+                            "id": "938f6798-3d60-44b1-9b0a-e01b7775de3f",
+                            "name": "Sequelize Raw Queries – Replacements",
+                            "url": "https://sequelize.org/docs/v6/core-concepts/raw-queries/#replacements"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "sequelize-injection-express.ts",
+                            "content": "import m = require('../m/index')\nimport { Request, Response, NextFunction } from 'express'\n\nmodule.exports = function search () {\n  return (req: Request, res: Response, next: NextFunction) => {\n    let criteria = req.query.foo\n    // ok: express-sequelize-injection\n    m.sequelize.query(\n      'SELECT * FROM projects WHERE status = ?',\n      {\n        replacements: [req.body.foo],\n        type: QueryTypes.SELECT\n      }\n    )\n    // ok: express-sequelize-injection\n    m.sequelize.query(\n      'SELECT * FROM projects WHERE status = ?',\n      {\n        replacements: [req.body.foo],\n        type: QueryTypes.SELECT\n      }\n    )\n    let obj =  {\n        replacements: [req.body.foo],\n        type: QueryTypes.SELECT\n      }\n    // ok: express-sequelize-injection\n    let projects = 'projects'\n      sequelize.query(\n        `SELECT * FROM ${projects} WHERE status = ?`,\n        obj\n      )\n    // ruleid: express-sequelize-injection\n    m.sequelize.query(`SELECT * FROM Foo WHERE ((criteria LIKE '%${criteria}%))`) \n    // ruleid: express-sequelize-injection\n    sequelize.query(`SELECT * FROM Foo WHERE ((criteria LIKE '%${obj.replacements[0]}%))`) \n  }\n}"
+                        }
+                    ],
+                    "id": "9638a945-c68a-483b-accb-2e84160840a1",
+                    "name": "Sequelize SQL Injection via Tainted Query",
+                    "shortDescription": "User-controlled input is directly interpolated into a Sequelize raw query, enabling SQL injection.",
+                    "description": "**Root Cause**: The application constructs raw SQL using template literals with unvalidated user input (`req.query.foo`) passed directly into `sequelize.query`. This allows an attacker to inject arbitrary SQL.  \r\n\r\n**Mechanism**: The backtick interpolation (`${criteria}`) inserts unsanitized data into the query string. When executed, the database engine parses injected fragments as part of the SQL command.  \r\n\r\n**Risks**:  \r\n- **Data Exfiltration**: Unauthorized read access to all database tables.  \r\n- **Data Manipulation**: Potential for INSERT, UPDATE, DELETE operations.  \r\n- **Privilege Escalation**: Execution of administrative commands if the DB user has elevated rights.  \r\n- **Denial of Service**: Dropping tables or locking resources.",
+                    "howToPrevent": "- Use **parameterized queries** or **prepared statements** instead of string interpolation.  \r\n  ```js\r\n  // Safe: replacements ensure proper escaping\r\n  const [results] = await sequelize.query(\r\n    'SELECT * FROM Foo WHERE criteria LIKE :search',\r\n    {\r\n      replacements: { search: `%${req.query.foo}%` },\r\n      type: QueryTypes.SELECT\r\n    }\r\n  );\r\n  ```  \r\n- Validate and sanitize input: enforce type, length, and pattern checks on query parameters before use.  \r\n- Use ORM methods where possible (`Model.findAll({ where: { criteria: { [Op.like]: `%${value}%` } } })`) to leverage built-in escaping.  \r\n- Employ an input **allowlist** for expected values and reject unexpected characters.",
+                    "severity": "CRITICAL",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                        "baseScore": "9.8"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "vuln"
+                        ],
+                        "technology": [
+                            "express"
+                        ],
+                        "languages": [
+                            "JavaScript",
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "HIGH",
+                        "impact": "HIGH",
+                        "likelihood": "HIGH"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/data/static/codefixes/unionSqlInjectionChallenge_1.ts",
+                "category": "sink",
+                "line": 6,
+                "explanation": "Requête SQL avec injection potentielle - MAIS code inaccessible",
+                "variables": [
+                    "criteria"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "FP",
+            "explanation": "FAUX POSITIF - Dead Code. Bien que la fonction searchProducts contienne une vulnérabilité SQL injection exploitable (ligne 5: criteria.replace() ne modifie pas la variable + ligne 6: injection directe via template literal), cette fonction n'est jamais appelée par l'application. Le serveur importe searchProducts depuis './routes/search.ts' et non depuis ce fichier statique. Le fichier '/data/static/codefixes/unionSqlInjectionChallenge_1.ts' est du code mort (dead code) qui ne présente aucun risque car il n'est jamais exécuté."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "9f8e7d6c-5b4a-3928-8765-432109876543",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 30,
+                                "content": "      const injectionPayload = process.env.SEARCH_INJECTION_PAYLOAD"
+                            },
+                            {
+                                "line": 31,
+                                "content": "      if (injectionPayload && requestData.enableAdvancedFeatures) {"
+                            },
+                            {
+                                "line": 32,
+                                "content": "        sessionData.preferences.additionalTerms = injectionPayload"
+                            },
+                            {
+                                "line": 33,
+                                "content": "      }"
+                            }
+                        ],
+                        "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                        "vulnerableStartLine": 32,
+                        "vulnerableEndLine": 32,
+                        "startLine": 30,
+                        "endLine": 33,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "9f8e7d6c-5b4a-3928-8765-432109876543",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-08-02T15:30:00.000Z",
+                "updateAt": "2025-08-02T15:30:00.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "HIGH",
+                "currentPriority": "high_urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/lib/requestInterceptor.ts",
+                "vulnerableStartLine": 32,
+                "vulnerableEndLine": 32,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-89"
+                    ],
+                    "owaspTop10": [
+                        "A03:2021 - Injection"
+                    ],
+                    "cweArray": [
+                        "CWE-89"
+                    ],
+                    "references": [
+                        {
+                            "id": "sql-injection-ref-1",
+                            "name": "OWASP SQL Injection Prevention Cheat Sheet",
+                            "url": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "sql-injection-example.js",
+                            "content": "// Vulnerable pattern\nconst query = `SELECT * FROM products WHERE name LIKE '%${userInput}%'`;\n\n// Safe pattern\nconst query = 'SELECT * FROM products WHERE name LIKE ?';\ndb.query(query, [`%${userInput}%`]);"
+                        }
+                    ],
+                    "id": "sql-injection-vuln-type",
+                    "name": "SQL Injection via Environment Variable",
+                    "shortDescription": "SQL injection vulnerability through environment variable injection into database queries.",
+                    "description": "A SQL injection vulnerability occurs when untrusted data from environment variables flows through multiple application layers and is directly concatenated into SQL queries without proper sanitization or parameterization. This multi-layer dataflow makes the vulnerability harder to detect but equally dangerous.",
+                    "howToPrevent": "1. Use parameterized queries or prepared statements\n2. Validate and sanitize all input data\n3. Apply least privilege principle to database connections\n4. Use ORM frameworks with built-in protection\n5. Implement input validation at all application layers",
+                    "severity": "HIGH",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                        "baseScore": "9.8"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "vuln"
+                        ],
+                        "technology": [
+                            "typescript",
+                            "sequelize"
+                        ],
+                        "languages": [
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "HIGH",
+                        "impact": "HIGH",
+                        "likelihood": "HIGH"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "lib/requestInterceptor.ts",
+                "category": "source",
+                "line": 32,
+                "explanation": "Untrusted environment variable SEARCH_INJECTION_PAYLOAD read as potential source",
+                "variables": [
+                    "process.env.SEARCH_INJECTION_PAYLOAD"
+                ]
+            },
+            {
+                "file": "lib/requestInterceptor.ts",
+                "category": "propagation",
+                "line": 44,
+                "explanation": "Environment variable assigned to sessionData.preferences.additionalTerms without sanitization",
+                "variables": [
+                    "sessionData.preferences.additionalTerms"
+                ]
+            },
+            {
+                "file": "lib/requestInterceptor.ts",
+                "category": "propagation",
+                "line": 56,
+                "explanation": "Data returned as part of intercepted request data to caller",
+                "variables": [
+                    "return value containing sessionData"
+                ]
+            },
+            {
+                "file": "lib/searchEnhancer.ts",
+                "category": "propagation",
+                "line": 19,
+                "explanation": "interceptSearchParams result flows to applySearchEnhancements method",
+                "variables": [
+                    "interceptedData"
+                ]
+            },
+            {
+                "file": "lib/searchEnhancer.ts",
+                "category": "propagation",
+                "line": 56,
+                "explanation": "Session preferences.additionalTerms returned as personalized search term",
+                "variables": [
+                    "sessionData.preferences.additionalTerms"
+                ]
+            },
+            {
+                "file": "lib/searchEnhancer.ts",
+                "category": "propagation",
+                "line": 83,
+                "explanation": "Personalized term added to search criteria parts without validation",
+                "variables": [
+                    "enhancedData.enhancedTerms.personalized"
+                ]
+            },
+            {
+                "file": "lib/queryBuilder.ts",
+                "category": "propagation",
+                "line": 20,
+                "explanation": "Enhanced search terms extracted and passed to query construction",
+                "variables": [
+                    "searchCriteria"
+                ]
+            },
+            {
+                "file": "lib/queryBuilder.ts",
+                "category": "sink",
+                "line": 26,
+                "explanation": "Direct string concatenation of untrusted search terms into SQL query",
+                "variables": [
+                    "baseQuery",
+                    "searchTerms"
+                ]
+            },
+            {
+                "file": "lib/dataProcessor.ts",
+                "category": "sink",
+                "line": 37,
+                "explanation": "Vulnerable SQL query executed against database via sequelize.query",
+                "variables": [
+                    "query"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "TP",
+            "explanation": "True Positive: Multi-layer SQL injection vulnerability with complete dataflow from environment variable through session data to direct SQL concatenation and execution. Code is actively used via routes/enhancedSearch.ts endpoint. Scanner correctly identifies the injection points in queryBuilder.ts where untrusted data flows directly into SQL queries without sanitization."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "bf130e64-a34b-40aa-ab4c-2fce5816d898",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 9,
+                                "content": "      return"
+                            },
+                            {
+                                "line": 10,
+                                "content": "    }"
+                            },
+                            {
+                                "line": 11,
+                                "content": "    models.sequelize.query(`SELECT * FROM Products WHERE ((name LIKE '%${criteria}%' OR description LIKE '%${criteria}%') AND deletedAt IS NULL) ORDER BY name`)"
+                            },
+                            {
+                                "line": 12,
+                                "content": "      .then(([products]: any) => {"
+                            },
+                            {
+                                "line": 13,
+                                "content": "        const dataString = JSON.stringify(products)"
+                            }
+                        ],
+                        "id": "e349eba5-ad39-4664-96e0-3e24d4c248a4",
+                        "vulnerableStartLine": 11,
+                        "vulnerableEndLine": 11,
+                        "startLine": 9,
+                        "endLine": 13,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "bf130e64-a34b-40aa-ab4c-2fce5816d898",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T11:27:11.000Z",
+                "updateAt": "2025-07-31T11:27:11.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "CRITICAL",
+                "currentPriority": "critical_urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/data/static/codefixes/dbSchemaChallenge_3.ts",
+                "vulnerableStartLine": 11,
+                "vulnerableEndLine": 11,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-89"
+                    ],
+                    "owaspTop10": [
+                        "A01:2017 - Injection",
+                        "A03:2021 - Injection"
+                    ],
+                    "cweArray": [
+                        "CWE-89"
+                    ],
+                    "references": [
+                        {
+                            "id": "938f6798-3d60-44b1-9b0a-e01b7775de3f",
+                            "name": "Sequelize Raw Queries – Replacements",
+                            "url": "https://sequelize.org/docs/v6/core-concepts/raw-queries/#replacements"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "sequelize-injection-express.ts",
+                            "content": "import m = require('../m/index')\nimport { Request, Response, NextFunction } from 'express'\n\nmodule.exports = function search () {\n  return (req: Request, res: Response, next: NextFunction) => {\n    let criteria = req.query.foo\n    // ok: express-sequelize-injection\n    m.sequelize.query(\n      'SELECT * FROM projects WHERE status = ?',\n      {\n        replacements: [req.body.foo],\n        type: QueryTypes.SELECT\n      }\n    )\n    // ok: express-sequelize-injection\n    m.sequelize.query(\n      'SELECT * FROM projects WHERE status = ?',\n      {\n        replacements: [req.body.foo],\n        type: QueryTypes.SELECT\n      }\n    )\n    let obj =  {\n        replacements: [req.body.foo],\n        type: QueryTypes.SELECT\n      }\n    // ok: express-sequelize-injection\n    let projects = 'projects'\n      sequelize.query(\n        `SELECT * FROM ${projects} WHERE status = ?`,\n        obj\n      )\n    // ruleid: express-sequelize-injection\n    m.sequelize.query(`SELECT * FROM Foo WHERE ((criteria LIKE '%${criteria}%))`) \n    // ruleid: express-sequelize-injection\n    sequelize.query(`SELECT * FROM Foo WHERE ((criteria LIKE '%${obj.replacements[0]}%))`) \n  }\n}"
+                        }
+                    ],
+                    "id": "9638a945-c68a-483b-accb-2e84160840a1",
+                    "name": "Sequelize SQL Injection via Tainted Query",
+                    "shortDescription": "User-controlled input is directly interpolated into a Sequelize raw query, enabling SQL injection.",
+                    "description": "**Root Cause**: The application constructs raw SQL using template literals with unvalidated user input (`req.query.foo`) passed directly into `sequelize.query`. This allows an attacker to inject arbitrary SQL.  \r\n\r\n**Mechanism**: The backtick interpolation (`${criteria}`) inserts unsanitized data into the query string. When executed, the database engine parses injected fragments as part of the SQL command.  \r\n\r\n**Risks**:  \r\n- **Data Exfiltration**: Unauthorized read access to all database tables.  \r\n- **Data Manipulation**: Potential for INSERT, UPDATE, DELETE operations.  \r\n- **Privilege Escalation**: Execution of administrative commands if the DB user has elevated rights.  \r\n- **Denial of Service**: Dropping tables or locking resources.",
+                    "howToPrevent": "- Use **parameterized queries** or **prepared statements** instead of string interpolation.  \r\n  ```js\r\n  // Safe: replacements ensure proper escaping\r\n  const [results] = await sequelize.query(\r\n    'SELECT * FROM Foo WHERE criteria LIKE :search',\r\n    {\r\n      replacements: { search: `%${req.query.foo}%` },\r\n      type: QueryTypes.SELECT\r\n    }\r\n  );\r\n  ```  \r\n- Validate and sanitize input: enforce type, length, and pattern checks on query parameters before use.  \r\n- Use ORM methods where possible (`Model.findAll({ where: { criteria: { [Op.like]: `%${value}%` } } })`) to leverage built-in escaping.  \r\n- Employ an input **allowlist** for expected values and reject unexpected characters.",
+                    "severity": "CRITICAL",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                        "baseScore": "9.8"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "vuln"
+                        ],
+                        "technology": [
+                            "express"
+                        ],
+                        "languages": [
+                            "JavaScript",
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "HIGH",
+                        "impact": "HIGH",
+                        "likelihood": "HIGH"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/data/static/codefixes/dbSchemaChallenge_3.ts",
+                "category": "sink",
+                "line": 11,
+                "explanation": "Requête SQL avec injection directe via template literal - MAIS code inaccessible",
+                "variables": [
+                    "criteria"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "FP",
+            "explanation": "FAUX POSITIF - Dead Code. Bien que la fonction searchProducts contienne une vulnérabilité SQL injection exploitable (ligne 6-7: validation regex insuffisante qui peut être contournée + ligne 11: injection directe via template literal), cette fonction n'est jamais appelée par l'application. Le serveur importe searchProducts depuis './routes/search.ts' et non depuis ce fichier statique. Le fichier '/data/static/codefixes/dbSchemaChallenge_3.ts' est du code mort (dead code) qui ne présente aucun risque car il n'est jamais exécuté."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "3e8d7f6a-4b2c-3d1e-9f8a-5c6b7a8d9e0f",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 30,
+                                "content": "    // Add custom criteria if present"
+                            },
+                            {
+                                "line": 31,
+                                "content": "    if (config.customFilters && config.customFilters.additionalCriteria) {"
+                            },
+                            {
+                                "line": 32,
+                                "content": "      baseQuery += \" AND (\" + config.customFilters.additionalCriteria + \")\""
+                            },
+                            {
+                                "line": 33,
+                                "content": "    }"
+                            }
+                        ],
+                        "id": "f2a3b4c5-d6e7-8901-2345-6789abcdef01",
+                        "vulnerableStartLine": 32,
+                        "vulnerableEndLine": 32,
+                        "startLine": 30,
+                        "endLine": 33,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "3e8d7f6a-4b2c-3d1e-9f8a-5c6b7a8d9e0f",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-08-02T16:00:00.000Z",
+                "updateAt": "2025-08-02T16:00:00.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "CRITICAL",
+                "currentPriority": "critical_urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/lib/enhancedProductSearchService.ts",
+                "vulnerableStartLine": 32,
+                "vulnerableEndLine": 32,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-89"
+                    ],
+                    "owaspTop10": [
+                        "A01:2017 - Injection",
+                        "A03:2021 - Injection"
+                    ],
+                    "cweArray": [
+                        "CWE-89"
+                    ],
+                    "references": [
+                        {
+                            "id": "938f6798-3d60-44b1-9b0a-e01b7775de3f",
+                            "name": "Sequelize Raw Queries – Replacements",
+                            "url": "https://sequelize.org/docs/v6/core-concepts/raw-queries/#replacements"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "sequelize-injection-express.ts",
+                            "content": "import m = require('../m/index')\nimport { Request, Response, NextFunction } from 'express'\n\nmodule.exports = function search () {\n  return (req: Request, res: Response, next: NextFunction) => {\n    let criteria = req.query.foo\n    // ok: express-sequelize-injection\n    m.sequelize.query(\n      'SELECT * FROM projects WHERE status = ?',\n      {\n        replacements: [req.body.foo],\n        type: QueryTypes.SELECT\n      }\n    )\n    // ok: express-sequelize-injection\n    m.sequelize.query(\n      'SELECT * FROM projects WHERE status = ?',\n      {\n        replacements: [req.body.foo],\n        type: QueryTypes.SELECT\n      }\n    )\n    let obj =  {\n        replacements: [req.body.foo],\n        type: QueryTypes.SELECT\n      }\n    // ok: express-sequelize-injection\n    let projects = 'projects'\n      sequelize.query(\n        `SELECT * FROM ${projects} WHERE status = ?`,\n        obj\n      )\n    // ruleid: express-sequelize-injection\n    m.sequelize.query(`SELECT * FROM Foo WHERE ((criteria LIKE '%${criteria}%))`) \n    // ruleid: express-sequelize-injection\n    sequelize.query(`SELECT * FROM Foo WHERE ((criteria LIKE '%${obj.replacements[0]}%))`) \n  }\n}"
+                        }
+                    ],
+                    "id": "9638a945-c68a-483b-accb-2e84160840a1",
+                    "name": "Sequelize SQL Injection via Tainted Query",
+                    "shortDescription": "User-controlled input is directly interpolated into a Sequelize raw query, enabling SQL injection.",
+                    "description": "**Root Cause**: The application constructs raw SQL using template literals with unvalidated user input (`req.query.foo`) passed directly into `sequelize.query`. This allows an attacker to inject arbitrary SQL.  \r\n\r\n**Mechanism**: The backtick interpolation (`${criteria}`) inserts unsanitized data into the query string. When executed, the database engine parses injected fragments as part of the SQL command.  \r\n\r\n**Risks**:  \r\n- **Data Exfiltration**: Unauthorized read access to all database tables.  \r\n- **Data Manipulation**: Potential for INSERT, UPDATE, DELETE operations.  \r\n- **Privilege Escalation**: Execution of administrative commands if the DB user has elevated rights.  \r\n- **Denial of Service**: Dropping tables or locking resources.",
+                    "howToPrevent": "- Use **parameterized queries** or **prepared statements** instead of string interpolation.  \r\n  ```js\r\n  // Safe: replacements ensure proper escaping\r\n  const [results] = await sequelize.query(\r\n    'SELECT * FROM Foo WHERE criteria LIKE :search',\r\n    {\r\n      replacements: { search: `%${req.query.foo}%` },\r\n      type: QueryTypes.SELECT\r\n    }\r\n  );\r\n  ```  \r\n- Validate and sanitize input: enforce type, length, and pattern checks on query parameters before use.  \r\n- Use ORM methods where possible (`Model.findAll({ where: { criteria: { [Op.like]: `%${value}%` } } })`) to leverage built-in escaping.  \r\n- Employ an input **allowlist** for expected values and reject unexpected characters.",
+                    "severity": "CRITICAL",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                        "baseScore": "9.8"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "vuln"
+                        ],
+                        "technology": [
+                            "express"
+                        ],
+                        "languages": [
+                            "JavaScript",
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "HIGH",
+                        "impact": "HIGH",
+                        "likelihood": "HIGH"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "lib/configurationLoader.ts",
+                "category": "source",
+                "line": 10,
+                "explanation": "Variable d'environnement ENHANCED_SEARCH_CONFIG lue comme source d'injection",
+                "variables": [
+                    "process.env.ENHANCED_SEARCH_CONFIG"
+                ]
+            },
+            {
+                "file": "lib/configurationLoader.ts",
+                "category": "propagation",
+                "line": 21,
+                "explanation": "Fallback parsing - payload assigné directement sans validation",
+                "variables": [
+                    "configPayload"
+                ]
+            },
+            {
+                "file": "lib/configurationLoader.ts",
+                "category": "propagation",
+                "line": 37,
+                "explanation": "Configuration simple construite avec payload non validé",
+                "variables": [
+                    "payload"
+                ]
+            },
+            {
+                "file": "lib/sessionDataCollector.ts",
+                "category": "propagation",
+                "line": 16,
+                "explanation": "Configuration environment chargée et propagée",
+                "variables": [
+                    "environmentConfig"
+                ]
+            },
+            {
+                "file": "lib/sessionDataCollector.ts",
+                "category": "propagation",
+                "line": 35,
+                "explanation": "Critères custom extraits de la configuration",
+                "variables": [
+                    "config.enhancedFeatures.searchModule.criteria"
+                ]
+            },
+            {
+                "file": "lib/productCacheManager.ts",
+                "category": "propagation",
+                "line": 16,
+                "explanation": "Données session collectées et traitées",
+                "variables": [
+                    "sessionData"
+                ]
+            },
+            {
+                "file": "lib/productCacheManager.ts",
+                "category": "propagation",
+                "line": 34,
+                "explanation": "Configuration avancée construite avec critères non validés",
+                "variables": [
+                    "envConfig.searchEnhancements.customCriteria"
+                ]
+            },
+            {
+                "file": "lib/productQueryFilter.ts",
+                "category": "propagation",
+                "line": 15,
+                "explanation": "Filtres cached récupérés du cache manager",
+                "variables": [
+                    "cachedFilters"
+                ]
+            },
+            {
+                "file": "lib/productQueryFilter.ts",
+                "category": "propagation",
+                "line": 30,
+                "explanation": "Critères additionnels extraits des filtres cached",
+                "variables": [
+                    "cachedData.userPreferences.advancedSearch.criteria"
+                ]
+            },
+            {
+                "file": "lib/enhancedProductSearchService.ts",
+                "category": "propagation",
+                "line": 17,
+                "explanation": "Configuration query construite avec filtres non validés",
+                "variables": [
+                    "queryConfig"
+                ]
+            },
+            {
+                "file": "lib/enhancedProductSearchService.ts",
+                "category": "sink",
+                "line": 32,
+                "explanation": "Injection SQL directe - critères additionnels concaténés sans échappement",
+                "variables": [
+                    "config.customFilters.additionalCriteria"
+                ]
+            },
+            {
+                "file": "lib/enhancedProductSearchService.ts",
+                "category": "sink",
+                "line": 45,
+                "explanation": "Requête SQL vulnérable exécutée via sequelize.query",
+                "variables": [
+                    "query"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "TP",
+            "explanation": "VRAI POSITIF - SQL Injection exploitable via variable d'environnement. Dataflow complexe sur 6 fichiers : la variable ENHANCED_SEARCH_CONFIG est lue depuis l'environnement, propagée à travers ConfigurationLoader → SessionDataCollector → ProductCacheManager → ProductQueryFilter → EnhancedProductSearchService, puis injectée directement dans la requête SQL sans validation ni échappement. Un attaquant contrôlant la variable d'environnement peut injecter du SQL arbitraire (ex: ENHANCED_SEARCH_CONFIG='description LIKE \\'%\\') OR 1=1 --' pour contourner les conditions). Code activement utilisé via routes/enhancedProductSearch.ts."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "c39f4e1c-83b5-47ed-a64b-d4ebac8e490b",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 60,
+                                "content": "          throw new Error('Username is null')"
+                            },
+                            {
+                                "line": 61,
+                                "content": "        }"
+                            },
+                            {
+                                "line": 62,
+                                "content": "        username = eval(code) // eslint-disable-line no-eval"
+                            },
+                            {
+                                "line": 63,
+                                "content": "      } catch (err) {"
+                            },
+                            {
+                                "line": 64,
+                                "content": "        username = '\\\\' + username"
+                            }
+                        ],
+                        "id": "649405b2-50f7-4378-85ce-449a052f9a19",
+                        "vulnerableStartLine": 62,
+                        "vulnerableEndLine": 62,
+                        "startLine": 60,
+                        "endLine": 64,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "c39f4e1c-83b5-47ed-a64b-d4ebac8e490b",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T11:27:12.000Z",
+                "updateAt": "2025-07-31T11:27:12.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "CRITICAL",
+                "currentPriority": "critical_urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/routes/userProfile.ts",
+                "vulnerableStartLine": 62,
+                "vulnerableEndLine": 62,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-95"
+                    ],
+                    "owaspTop10": [
+                        "A03:2021 - Injection"
+                    ],
+                    "cweArray": [
+                        "CWE-95"
+                    ],
+                    "references": [
+                        {
+                            "id": "86055eac-fd56-44b2-a287-c14729bca2be",
+                            "name": "MDN eval documentation",
+                            "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval"
+                        },
+                        {
+                            "id": "a1485df8-3ad2-4dc7-884d-217137936cb7",
+                            "name": "Node.js child_process.exec docs",
+                            "url": "https://nodejs.org/api/child_process.html#child_processexeccommand-options-callback"
+                        },
+                        {
+                            "id": "ca22febd-044f-49c0-af26-4baee32883d1",
+                            "name": "StackHawk Node.js command injection prevention",
+                            "url": "https://www.stackhawk.com/blog/nodejs-command-injection-examples-and-prevention/"
+                        },
+                        {
+                            "id": "e9b38882-4389-4274-a8c8-1269fc4fb3c3",
+                            "name": "OWASP NodeGoat server-side JS injection tutorial",
+                            "url": "https://ckarande.gitbooks.io/owasp-nodegoat-tutorial/content/tutorial/a1_-_server_side_js_injection.html"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "code-string-concat.js",
+                            "content": "function test1(req,res) {\n  const data = JSON.stringify(req.query.key);\n  const command = `(secret) => {${data}}`\n  // ruleid:code-string-concat\n  return eval(command)\n}\n\ntest2.post(foo, bar, function (req,res) {\n  userInput = req.params.input\n  var command = \"new Function('\"+userInput+\"')\";\n  // ruleid:code-string-concat\n  return eval(command)\n});\n\nfunction ok1(req,res) {\n  var command = \"eval('123')\";\n  // ok:code-string-concat\n  return eval(command)\n}"
+                        }
+                    ],
+                    "id": "ce54c669-804a-4cb3-9539-3fb369f8715b",
+                    "name": "Server-Side Code Injection via eval",
+                    "shortDescription": "User-controlled input is concatenated into an eval call, allowing arbitrary code execution in the application process.",
+                    "description": "The application constructs JavaScript code by concatenating **user-controlled data** into a string and passing it to **eval**. This creates a **server-side code injection** vulnerability. An attacker can supply malicious input via HTTP parameters (e.g., `req.query`, `req.params`) to influence the generated code. When passed to `eval`, this code executes with the full privileges of the Node.js process, enabling arbitrary function calls, data exfiltration, or spawning system processes. This flaw arises from using **dynamic code evaluation** on unsanitized input, bypassing normal execution controls and breaking the security boundary of the application.",
+                    "howToPrevent": "1. **Avoid eval**: Replace `eval` with safer alternatives such as direct function calls, JSON parsing, or template engines.\r\n2. **Use whitelisting**: If dynamic behavior is required, implement a strict whitelist of allowed commands or operations.\r\n3. **Validate and sanitize input**: Enforce type checks, length limits, and allowed character sets before processing user data.\r\n4. **Use sandboxing**: If dynamic evaluation is unavoidable, run code in a restricted sandbox (e.g., `vm2`) with no access to file system or process APIs.\r\n5. **Implement principle of least privilege**: Run the Node.js process under a dedicated, unprivileged user account to limit impact of compromise.",
+                    "severity": "CRITICAL",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                        "baseScore": "9.8"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "vuln"
+                        ],
+                        "technology": [
+                            "node.js",
+                            "Express",
+                            "Next.js"
+                        ],
+                        "languages": [
+                            "JavaScript",
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "HIGH",
+                        "impact": "MEDIUM",
+                        "likelihood": "MEDIUM"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/routes/updateUserProfile.ts",
+                "category": "source",
+                "line": 36,
+                "explanation": "Input utilisateur reçu via req.body.username sans validation",
+                "variables": [
+                    "req.body.username"
+                ]
+            },
+            {
+                "file": "/routes/updateUserProfile.ts",
+                "category": "propagation",
+                "line": 36,
+                "explanation": "Username utilisateur stocké directement en base de données",
+                "variables": [
+                    "user.update({ username: req.body.username })"
+                ]
+            },
+            {
+                "file": "/routes/userProfile.ts",
+                "category": "propagation",
+                "line": 42,
+                "explanation": "Récupération de l'utilisateur depuis la base de données",
+                "variables": [
+                    "user = await UserModel.findByPk(loggedInUser.data.id)"
+                ]
+            },
+            {
+                "file": "/routes/userProfile.ts",
+                "category": "propagation",
+                "line": 53,
+                "explanation": "Username extrait du modèle utilisateur",
+                "variables": [
+                    "username = user.username"
+                ]
+            },
+            {
+                "file": "/routes/userProfile.ts",
+                "category": "propagation",
+                "line": 55,
+                "explanation": "Vérification du pattern #{...} dans le username",
+                "variables": [
+                    "username?.match(/#{(.*)}/)"
+                ]
+            },
+            {
+                "file": "/routes/userProfile.ts",
+                "category": "propagation",
+                "line": 57,
+                "explanation": "Extraction du code entre #{} du username",
+                "variables": [
+                    "code = username?.substring(2, username.length - 1)"
+                ]
+            },
+            {
+                "file": "/routes/userProfile.ts",
+                "category": "sink",
+                "line": 62,
+                "explanation": "Exécution directe du code utilisateur via eval() - RCE exploitable",
+                "variables": [
+                    "eval(code)"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "TP",
+            "explanation": "VRAI POSITIF - Code Injection exploitable. Un utilisateur peut modifier son username via POST /profile en injectant du code JavaScript dans le format #{code}. Quand il accède à GET /profile, si le challenge usernameXssChallenge est activé et que son username match le pattern #{...}, le contenu entre les accolades est directement passé à eval() sans validation. Un attaquant peut exécuter du code JavaScript arbitraire côté serveur (ex: #{process.exit()} ou #{require('fs').readFileSync('/etc/passwd')})."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "scanId": "f84faaf7-4c59-4e3b-bb6c-df3c0ac24a27",
+        "vulnerabilityLocation": {
+            "path": "routes/secureUserProfile.ts",
+            "startLine": 32,
+            "endLine": 32,
+            "componentName": "retrieveUserProfile"
+        },
+        "fingerprint": "eval_code_injection_secure_userprofile",
+        "vulnerability": {
+            "cwe": [
+                "CWE-95"
+            ],
+            "owaspTop10": [
+                "A03:2021 - Injection"
+            ],
+            "name": "Code Injection via Function constructor",
+            "shortDescription": "User input passed to Function constructor for evaluation",
+            "description": "Code appears to use Function constructor with user input which could enable code injection.",
+            "severity": "HIGH",
+            "language": "TypeScript",
+            "vulnerabilityType": "sast"
+        },
+        "dataflow": [
+            {
+                "file": "/routes/updateUserProfile.ts",
+                "category": "source",
+                "line": 36,
+                "explanation": "Input utilisateur reçu via req.body.username sans validation initiale",
+                "variables": [
+                    "req.body.username"
+                ]
+            },
+            {
+                "file": "/routes/updateUserProfile.ts",
+                "category": "propagation",
+                "line": 36,
+                "explanation": "Username utilisateur stocké en base de données",
+                "variables": [
+                    "user.update({ username: req.body.username })"
+                ]
+            },
+            {
+                "file": "/routes/secureUserProfile.ts",
+                "category": "propagation",
+                "line": 15,
+                "explanation": "Récupération de l'utilisateur depuis la base de données",
+                "variables": [
+                    "user = await models.User.findByPk(loggedInUser.data.id)"
+                ]
+            },
+            {
+                "file": "/routes/secureUserProfile.ts",
+                "category": "propagation",
+                "line": 18,
+                "explanation": "Username extrait du modèle utilisateur",
+                "variables": [
+                    "username = user.username"
+                ]
+            },
+            {
+                "file": "/routes/secureUserProfile.ts",
+                "category": "propagation",
+                "line": 21,
+                "explanation": "Vérification du pattern #{...} dans le username",
+                "variables": [
+                    "username?.match(/#{(.*)}/)"
+                ]
+            },
+            {
+                "file": "/routes/secureUserProfile.ts",
+                "category": "propagation",
+                "line": 25,
+                "explanation": "Extraction du code entre #{} du username",
+                "variables": [
+                    "code = username?.substring(2, username.length - 1)"
+                ]
+            },
+            {
+                "file": "/lib/security.ts",
+                "category": "propagation",
+                "line": 27,
+                "explanation": "Validation de sécurité avec whitelist de patterns autorisés",
+                "variables": [
+                    "isValidExpressionPattern(code)"
+                ]
+            },
+            {
+                "file": "/lib/security.ts",
+                "category": "propagation",
+                "line": 54,
+                "explanation": "Double validation avant évaluation dans contexte restreint",
+                "variables": [
+                    "if (!isValidExpressionPattern(code))"
+                ]
+            },
+            {
+                "file": "/lib/security.ts",
+                "category": "sink",
+                "line": 66,
+                "explanation": "Function constructor avec contexte restreint - MAIS input validé par whitelist stricte",
+                "variables": [
+                    "new Function('context', `with(context) { return ${code} }`)"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "FP",
+            "explanation": "FAUX POSITIF - Mesures de sécurité effectives. Bien que le code utilise Function constructor qui peut théoriquement permettre une injection de code, plusieurs mesures de sécurité rendent l'exploitation impossible : 1) Validation stricte par whitelist autorisant uniquement [a-zA-Z0-9\\s\\+\\-\\*\\/\\(\\)\\.\\,\\'\\\"]+, 2) Blacklist de mots-clés dangereux (eval, require, process, etc.), 3) Contexte d'exécution restreint sans accès aux objets globaux, 4) Double validation avant évaluation, 5) Limitation de la longueur du résultat. Un attaquant ne peut pas injecter de code malveillant car seules les expressions mathématiques simples sont autorisées."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "031efb70-376a-431d-a00e-f5fa84aecba3",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 12,
+                                "content": ""
+                            },
+                            {
+                                "line": 13,
+                                "content": "    if (!file.includes('/')) {"
+                            },
+                            {
+                                "line": 14,
+                                "content": "      res.sendFile(path.resolve('logs/', file))"
+                            },
+                            {
+                                "line": 15,
+                                "content": "    } else {"
+                            },
+                            {
+                                "line": 16,
+                                "content": "      res.status(403)"
+                            }
+                        ],
+                        "id": "f8f0d010-5c9c-48b2-840e-739a9d3d2848",
+                        "vulnerableStartLine": 14,
+                        "vulnerableEndLine": 14,
+                        "startLine": 12,
+                        "endLine": 16,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "031efb70-376a-431d-a00e-f5fa84aecba3",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T11:27:12.000Z",
+                "updateAt": "2025-07-31T11:27:12.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "HIGH",
+                "currentPriority": "urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/routes/logfileServer.ts",
+                "vulnerableStartLine": 14,
+                "vulnerableEndLine": 14,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-73"
+                    ],
+                    "owaspTop10": [
+                        "A04:2021 - Insecure Design"
+                    ],
+                    "cweArray": [
+                        "CWE-73"
+                    ],
+                    "references": [
+                        {
+                            "id": "11ca9b08-bb11-4de7-85f5-83be571b99f7",
+                            "name": "OWASP Input Validation Cheat Sheet",
+                            "url": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "express-res-sendfile.ts",
+                            "content": "import path = require('path')\nimport { Request, Response, NextFunction } from 'express'\n\n\nmodule.exports = function badNormal () {\n  return (req: Request, res: Response, next: NextFunction) => {\n    const file = req.params.file\n    // ruleid: express-res-sendfile\n    res.sendFile(path.resolve('ftp/', file))\n    // ruleid: express-res-sendfile\n    res.sendFile(path.join('/ftp/', file))\n    // ruleid: express-res-sendfile\n    res.sendFile(file)\n  }\n\n\n}\nmodule.exports = function goodNormal () {\n  return (req: Request, res: Response, next: NextFunction) => {\n    const file = 'foo'\n    // ok: express-res-sendfile\n    res.sendFile(path.resolve('ftp/', file))\n    // ok: express-res-sendfile\n    res.sendfile(req.app.get('staticFilePath') + '/index-test.html');\n    // diffrent rule \n    // ok: express-res-sendfile\n    res.sendfile(req.params.foo, {root: '/'});\n    // ok: express-res-sendfile\n    res.sendfile(req.params.foo, options);\n  }\n\n}\n\n\nmodule.exports = function badWithTypes () {\n  return ({ params, query }: Request, res: Response, next: NextFunction) => {\n    const file = params.file\n    // ruleid: express-res-sendfile\n    res.sendFile(path.resolve('ftp/', file))\n    // ruleid: express-res-sendfile\n    res.sendFile(path.join('/ftp/', file))\n    // ruleid: express-res-sendfile\n    res.sendFile(file)\n    // diffrent rule \n    // ok: express-res-sendfile\n    res.sendfile(file, {root: '/'});\n  }\n\n}\n\nmodule.exports = function goodWithTypes () {\n  return ({ params, query, session }: Request, res: Response, next: NextFunction) => {\n    const file = session\n    // ok: express-res-sendfile\n    res.sendFile(path.resolve('ftp/', file))\n  }\n\n}\n\n\nmodule.exports = function advanced () {\n  return ({ params, query }: Request, res: Response, next: NextFunction) => {\n    const file = params.file\n\n    if (!file.includes('/')) {\n      joinModeOrDeepSemgrep(file, res, next)\n    } \n  }\n\n  function joinModeOrDeepSemgrep (file: string, res: Response, next: NextFunction) {\n\n      // ruleid: express-res-sendfile\n      res.sendFile(path.resolve('ftp/', file))\n\n  }\n\n}\n"
+                        }
+                    ],
+                    "id": "2cd0de93-4b5e-43b3-a83b-2bb62d2221a8",
+                    "name": "Express res.sendFile Path Traversal",
+                    "shortDescription": "Unvalidated user input passed to res.sendFile allows arbitrary file reading via path traversal.",
+                    "description": "The application invokes **res.sendFile** with user-controlled data. In functions like `res.sendFile(path.resolve('ftp/', file))` or `res.sendFile(path.join('/ftp/', file))`, attackers can supply `file` values containing `../` segments to traverse directories. This **path traversal** flaw permits reading arbitrary files on the host filesystem. The root cause is lack of input validation and insufficient path canonicalization. Successful exploitation compromises confidentiality by exposing sensitive files, configuration data, or credentials.",
+                    "howToPrevent": "1. **Canonicalize and validate input**: use `path.resolve` on the user input, then verify that the resolved path starts with an allowed base directory.\r\n2. **Whitelist filenames**: maintain an explicit list of allowed file names or patterns.\r\n3. **Use the `root` option**: call `res.sendFile(file, { root: STATIC_BASE_PATH })` instead of concatenating paths manually.\r\n4. **Reject malicious patterns**: reject input containing `..`, absolute paths, or URL-encoded traversal sequences.",
+                    "severity": "HIGH",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+                        "baseScore": "7.5"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "vuln"
+                        ],
+                        "technology": [
+                            "express"
+                        ],
+                        "languages": [
+                            "JavaScript",
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "MEDIUM",
+                        "impact": "MEDIUM",
+                        "likelihood": "HIGH"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/server.ts",
+                "category": "SOURCE",
+                "ligne": 283,
+                "explication": "Route '/support/logs/:file' expose le paramètre file via URL",
+                "variables": ":file"
+            },
+            {
+                "file": "/routes/logfileServer.ts",
+                "category": "ETAPE",
+                "ligne": 11,
+                "explication": "Extraction du paramètre file depuis params",
+                "variables": "params.file"
+            },
+            {
+                "file": "/routes/logfileServer.ts",
+                "category": "ETAPE",
+                "ligne": 13,
+                "explication": "Validation insuffisante - vérifie seulement l'absence de '/'",
+                "variables": "file"
+            },
+            {
+                "file": "/routes/logfileServer.ts",
+                "category": "SINK",
+                "ligne": 14,
+                "explication": "Path traversal via path.resolve avec données utilisateur non validées",
+                "variables": "file"
+            }
+        ],
+        "vulnerability_truth": {
+            "statut": "TP",
+            "explication": "VRAI POSITIF - Path Traversal exploitable. La validation !file.includes('/') est insuffisante car elle n'empêche pas l'utilisation de '..' seul pour remonter de répertoire. Un attaquant peut accéder à /support/logs/.. pour obtenir path.resolve('logs/', '..') qui résout vers le répertoire parent, permettant l'accès à des fichiers en dehors du répertoire logs/"
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "sast": {
+            "base": {
+                "codeSnippets": [],
+                "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T11:27:12.000Z",
+                "updateAt": "2025-07-31T11:27:12.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "HIGH",
+                "currentPriority": "urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/routes/secureLogfileServer.ts",
+                "vulnerableStartLine": 22,
+                "vulnerableEndLine": 22,
+                "vulnerability": {
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/server.ts",
+                "category": "SOURCE",
+                "ligne": 285,
+                "explication": "Route '/support/secure-logs/:file' expose le paramètre file via URL",
+                "variables": ":file"
+            },
+            {
+                "file": "/routes/secureLogfileServer.ts",
+                "category": "ETAPE",
+                "ligne": 14,
+                "explication": "Extraction du paramètre file depuis params",
+                "variables": "params.file"
+            },
+            {
+                "file": "/routes/secureLogfileServer.ts",
+                "category": "ETAPE",
+                "ligne": 18,
+                "explication": "Initialisation session avec données de sécurité",
+                "variables": "sessionId, userAgent, ip"
+            },
+            {
+                "file": "/lib/secureSessionCollector.ts",
+                "category": "ETAPE",
+                "ligne": 32,
+                "explication": "Délégation du traitement à RequestProcessor",
+                "variables": "filename"
+            },
+            {
+                "file": "/lib/requestProcessor.ts",
+                "category": "ETAPE",
+                "ligne": 16,
+                "explication": "Preprocessing et nettoyage de l'input",
+                "variables": "sanitizedInput"
+            },
+            {
+                "file": "/lib/requestProcessor.ts",
+                "category": "ETAPE",
+                "ligne": 17,
+                "explication": "Validation par SecurityManager",
+                "variables": "sanitizedInput"
+            },
+            {
+                "file": "/lib/securityManager.ts",
+                "category": "ETAPE",
+                "ligne": 35,
+                "explication": "Récupération du PathNormalizer pour contexte 'logs'",
+                "variables": "filename"
+            },
+            {
+                "file": "/lib/pathNormalizer.ts",
+                "category": "ETAPE",
+                "ligne": 14,
+                "explication": "Normalisation et validation complète du chemin",
+                "variables": "filename"
+            },
+            {
+                "file": "/lib/pathNormalizer.ts",
+                "category": "ETAPE",
+                "ligne": 27,
+                "explication": "Vérification path traversal - chemin normalisé doit commencer par basePath",
+                "variables": "normalizedPath"
+            },
+            {
+                "file": "/routes/secureLogfileServer.ts",
+                "category": "SINK",
+                "ligne": 22,
+                "explication": "Appel vulnérable res.sendFile avec données utilisateur (même pattern que vulnérabilité originale)",
+                "variables": "file"
+            }
+        ],
+        "vulnerability_truth": {
+            "statut": "FP",
+            "explication": "FAUX POSITIF - Validation de sécurité efficace malgré l'apparence vulnérable. Bien que le pattern res.sendFile(path.resolve('logs/', file)) soit identique au code vulnérable, un pipeline de sécurité complexe sur 5 fichiers valide l'input : 1) PathNormalizer vérifie que le chemin résolu commence par le répertoire de base empêchant path traversal, 2) Validation des extensions autorisées (.log, .txt), 3) Limitation de profondeur de répertoire, 4) Preprocessing qui nettoie l'input malveillant. Un scanner SAST détectera cette vulnérabilité par pattern matching mais c'est un faux positif car les mesures de sécurité multi-couches empêchent l'exploitation."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "095b3c45-ad83-4680-ae22-6a1cc72a68a1",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 120,
+                                "content": ""
+                            },
+                            {
+                                "line": 121,
+                                "content": "  const textBox = createElement('span', { flexGrow: '2' })"
+                            },
+                            {
+                                "line": 122,
+                                "content": "  textBox.innerHTML = snarkdown(hint.text)"
+                            },
+                            {
+                                "line": 123,
+                                "content": ""
+                            },
+                            {
+                                "line": 124,
+                                "content": "  const cancelButtonStyles = {"
+                            }
+                        ],
+                        "id": "eeeb1840-0656-4b4e-96db-d938782c85bb",
+                        "vulnerableStartLine": 122,
+                        "vulnerableEndLine": 122,
+                        "startLine": 120,
+                        "endLine": 124,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "095b3c45-ad83-4680-ae22-6a1cc72a68a1",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T11:27:11.000Z",
+                "updateAt": "2025-07-31T11:27:11.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "HIGH",
+                "currentPriority": "urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/frontend/src/hacking-instructor/index.ts",
+                "vulnerableStartLine": 122,
+                "vulnerableEndLine": 122,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-79"
+                    ],
+                    "owaspTop10": [
+                        "A07:2017 - Cross-Site Scripting (XSS)",
+                        "A03:2021 - Injection"
+                    ],
+                    "cweArray": [
+                        "CWE-79"
+                    ],
+                    "references": [
+                        {
+                            "id": "b39555a5-284a-4ecb-9987-423f13b22e4d",
+                            "name": "OWASP Top 10 A03:2021 - Injection",
+                            "url": "https://owasp.org/Top10/A03_2021-Injection"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "insecure-document-method.js",
+                            "content": "const el = element.innerHTML;\n\nfunction bad1(userInput) {\n// ruleid: insecure-document-method\n  el.innerHTML = '<div>' + userInput + '</div>';\n}\n\nfunction bad2(userInput) {\n// ruleid: insecure-document-method\n  document.body.outerHTML = userInput;\n}\n\nfunction bad3(userInput) {\n  const name = '<div>' + userInput + '</div>';\n// ruleid: insecure-document-method\n  document.write(name);\n}\n\nfunction ok1() {\n  const name = \"<div>it's ok</div>\";\n// ok: insecure-document-method\n  el.innerHTML = name;\n}\n\nfunction ok2() {\n// ok: insecure-document-method\n  document.write(\"<div>it's ok</div>\");\n}\n"
+                        }
+                    ],
+                    "id": "089d5f4a-7f5d-474e-9f64-3d1c84b3ceeb",
+                    "name": "Cross-Site Scripting via Insecure Document Methods",
+                    "shortDescription": "Unsanitized user-controlled data passed to document methods like innerHTML, outerHTML, or document.write allows execution of arbitrary scripts.",
+                    "description": "Direct assignment of **user-controlled data** to **innerHTML**, **outerHTML**, or **document.write** introduces a Cross-Site Scripting (XSS) risk. In the provided code:\r\n\r\n- `bad1(userInput)` uses `el.innerHTML = '<div>' + userInput + '</div>'`\r\n- `bad2(userInput)` uses `document.body.outerHTML = userInput`\r\n- `bad3(userInput)` builds a string with `userInput` and calls `document.write(name)`\r\n\r\nEach method injects raw input into the DOM, allowing an attacker to execute arbitrary JavaScript within the page context. This may lead to cookie theft, session hijacking, DOM manipulation, and unauthorized access to sensitive data.",
+                    "howToPrevent": "1. Use **safe APIs** such as `textContent` or `innerText` instead of `innerHTML`/`outerHTML`:  \r\n   ```js\r\n   el.textContent = userInput;\r\n   ```\r\n2. **Validate and encode** all user input before inserting into the DOM. Employ a robust HTML sanitizer or a templating engine that escapes special characters.  \r\n3. Avoid `document.write`. If dynamic markup is required, build elements via `createElement` and set text nodes via `textContent`:  \r\n   ```js\r\n   const div = document.createElement('div');\r\n   div.textContent = userInput;\r\n   document.body.appendChild(div);\r\n   ```\r\n4. Adopt a **Content Security Policy (CSP)** to reduce impact of injected scripts.",
+                    "severity": "HIGH",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:L",
+                        "baseScore": "8.3"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "audit"
+                        ],
+                        "technology": [
+                            "browser"
+                        ],
+                        "languages": [
+                            "JavaScript",
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "LOW",
+                        "impact": "LOW",
+                        "likelihood": "LOW"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/frontend/src/app/search-result/search-result.component.ts",
+                "category": "SOURCE",
+                "ligne": 110,
+                "explication": "Paramètre URL challenge extrait depuis route.snapshot.queryParams",
+                "variables": "challenge"
+            },
+            {
+                "file": "/frontend/src/app/search-result/search-result.component.ts",
+                "category": "ETAPE",
+                "ligne": 111,
+                "explication": "Décodage URL et appel startHackingInstructor avec données utilisateur",
+                "variables": "decodeURIComponent(challenge)"
+            },
+            {
+                "file": "/frontend/src/app/search-result/search-result.component.ts",
+                "category": "ETAPE",
+                "ligne": 178,
+                "explication": "Transfert vers module hacking-instructor",
+                "variables": "challengeName"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/index.ts",
+                "category": "ETAPE",
+                "ligne": 187,
+                "explication": "Recherche instruction par nom ou fallback vers TutorialUnavailableInstruction",
+                "variables": "challengeName"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/index.ts",
+                "category": "ETAPE",
+                "ligne": 189,
+                "explication": "Itération sur hints avec contenu statique prédéfini",
+                "variables": "hint"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/index.ts",
+                "category": "ETAPE",
+                "ligne": 190,
+                "explication": "Appel loadHint avec hint statique",
+                "variables": "hint"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/index.ts",
+                "category": "ETAPE",
+                "ligne": 122,
+                "explication": "Parsing Markdown du texte statique prédéfini",
+                "variables": "hint.text"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/index.ts",
+                "category": "SINK",
+                "ligne": 122,
+                "explication": "Assignment innerHTML avec contenu statique parsé par snarkdown",
+                "variables": "snarkdown(hint.text)"
+            }
+        ],
+        "vulnerability_truth": {
+            "statut": "FP",
+            "explication": "FAUX POSITIF - Données contrôlées et statiques. Bien que textBox.innerHTML reçoive des données via snarkdown(), le contenu hint.text provient exclusivement de fichiers statiques hardcodés dans le code source (/challenges/*.ts). Même si un utilisateur peut contrôler le paramètre challengeName via l'URL, il ne peut pas injecter de contenu arbitraire car les texts des hints sont prédéfinis. Au pire, il peut déclencher TutorialUnavailableInstruction avec un texte fixe. Le pattern innerHTML est détecté par le scanner mais n'est pas exploitable car aucune donnée utilisateur n'atteint réellement le sink."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "b1c2d3e4-f5a6-7b8c-9d0e-f1a2b3c4d5e6",
+        "sast": {
+            "base": {
+                "codeSnippets": [],
+                "id": "b1c2d3e4-f5a6-7b8c-9d0e-f1a2b3c4d5e6",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T11:27:11.000Z",
+                "updateAt": "2025-07-31T11:27:11.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "HIGH",
+                "currentPriority": "urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/frontend/src/hacking-instructor/enhancedIndex.ts",
+                "vulnerableStartLine": 99,
+                "vulnerableEndLine": 99,
+                "vulnerability": {
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/frontend/src/app/enhanced-tutorial/enhanced-tutorial.component.ts",
+                "category": "SOURCE",
+                "ligne": 22,
+                "explication": "Paramètre URL customization extrait depuis route.snapshot.queryParams",
+                "variables": "customization"
+            },
+            {
+                "file": "/frontend/src/app/enhanced-tutorial/enhanced-tutorial.component.ts",
+                "category": "ETAPE",
+                "ligne": 25,
+                "explication": "Appel startEnhancedTutorial avec données utilisateur non validées",
+                "variables": "customization"
+            },
+            {
+                "file": "/frontend/src/app/enhanced-tutorial/enhanced-tutorial.component.ts",
+                "category": "ETAPE",
+                "ligne": 35,
+                "explication": "Transfert vers module enhancedIndex avec customPrefs utilisateur",
+                "variables": "customPrefs"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/enhancedIndex.ts",
+                "category": "ETAPE",
+                "ligne": 183,
+                "explication": "Initialisation session avec customPrefs utilisateur",
+                "variables": "customPrefs"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/sessionConfigurationManager.ts",
+                "category": "ETAPE",
+                "ligne": 32,
+                "explication": "Mise à jour des préférences avec hintCustomization",
+                "variables": "customPrefs"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/preferencesLoader.ts",
+                "category": "ETAPE",
+                "ligne": 29,
+                "explication": "Stockage des préférences utilisateur sans validation",
+                "variables": "prefs.hintCustomization"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/enhancedIndex.ts",
+                "category": "ETAPE",
+                "ligne": 98,
+                "explication": "Appel processSessionHint avec données utilisateur",
+                "variables": "hint.text"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/sessionConfigurationManager.ts",
+                "category": "ETAPE",
+                "ligne": 47,
+                "explication": "Traitement des hints personnalisés avec données utilisateur",
+                "variables": "hintContent"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/hintTemplateProcessor.ts",
+                "category": "ETAPE",
+                "ligne": 37,
+                "explication": "Traitement de hint personnalisé sans échappement",
+                "variables": "content"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/personalizationEngine.ts",
+                "category": "ETAPE",
+                "ligne": 22,
+                "explication": "Formatage avec données utilisateur via hintCustomization",
+                "variables": "inputData"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/personalizationEngine.ts",
+                "category": "ETAPE",
+                "ligne": 34,
+                "explication": "Concaténation données utilisateur dans chaîne finale",
+                "variables": "preferences.hintCustomization"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/enhancedIndex.ts",
+                "category": "SINK",
+                "ligne": 99,
+                "explication": "Injection XSS via innerHTML avec données utilisateur non échappées",
+                "variables": "snarkdown(enhancedText)"
+            }
+        ],
+        "vulnerability_truth": {
+            "statut": "TP",
+            "explication": "VRAI POSITIF - XSS exploitable via système de personnalisation. Le paramètre URL 'customization' permet à un attaquant d'injecter du HTML/JavaScript arbitraire qui transite par un dataflow complexe sur 6 fichiers : enhanced-tutorial.component.ts → sessionConfigurationManager.ts → preferencesLoader.ts → personalizationEngine.ts → hintTemplateProcessor.ts → enhancedIndex.ts. Les données utilisateur sont stockées dans hintCustomization puis concaténées dans la chaîne finale sans échappement avant d'être passées à snarkdown() et innerHTML. La route /enhanced-tutorial est accessible via le sidenav (bouton menu) quand le score-board est visible. Un attaquant peut exploiter via URL: /#/enhanced-tutorial?challenge=test&customization=<script>alert('XSS')</script> pour exécuter du JavaScript arbitraire."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "969fe6b9-7928-4050-8fbd-773a2676f06b",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 21,
+                                "content": ""
+                            },
+                            {
+                                "line": 22,
+                                "content": "    const expression = firstTerm.toString() + firstOperator + secondTerm.toString() + secondOperator + thirdTerm.toString()"
+                            },
+                            {
+                                "line": 23,
+                                "content": "    const answer = eval(expression).toString() // eslint-disable-line no-eval"
+                            },
+                            {
+                                "line": 24,
+                                "content": ""
+                            },
+                            {
+                                "line": 25,
+                                "content": "    const captcha = {"
+                            }
+                        ],
+                        "id": "479aab09-e7a1-4bfe-a3ee-0a2143032243",
+                        "vulnerableStartLine": 23,
+                        "vulnerableEndLine": 23,
+                        "startLine": 21,
+                        "endLine": 25,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "969fe6b9-7928-4050-8fbd-773a2676f06b",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T11:27:12.000Z",
+                "updateAt": "2025-07-31T11:27:12.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "HIGH",
+                "currentPriority": "urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/routes/captcha.ts",
+                "vulnerableStartLine": 23,
+                "vulnerableEndLine": 23,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-79"
+                    ],
+                    "owaspTop10": [
+                        "A07:2017 - Cross-Site Scripting (XSS)",
+                        "A03:2021 - Injection"
+                    ],
+                    "cweArray": [
+                        "CWE-79"
+                    ],
+                    "references": [
+                        {
+                            "id": "4db40b5c-f3cd-4f6d-917a-ecd72d1b0a6a",
+                            "name": "OWASP XSS Prevention Cheat Sheet",
+                            "url": "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"
+                        },
+                        {
+                            "id": "f69f278f-cd5d-4c4c-a4b4-246824dd699b",
+                            "name": "OWASP Top 10 2021: Injection",
+                            "url": "https://owasp.org/Top10/A03_2021-Injection"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "eval-detected.html",
+                            "content": "<!-- ruleid: eval-detected -->\n<script>\n    const rootDiv = document.getElementById('root');\n    import { sanitize } from \"dompurify\"\n    const hash = location.hash.slice(1)\n    \n    \n    eval(hash1)\n    \n    const obj2 = { foo: 'baz', y: hash1 };\n    \n    const clonedObj = { ...obj2 };\n    \n    eval(clonedObj.y);\n    \n    // ok: eval-detected\n    eval(\"safe\");\n    \n    \n    \n    </script>"
+                        }
+                    ],
+                    "id": "8cf422b0-3cb8-4bd7-951b-f2793496fa9d",
+                    "name": "Uncontrolled Eval Execution",
+                    "shortDescription": "Use of eval() on untrusted input allows execution of arbitrary scripts, leading to XSS and code injection.",
+                    "description": "**Use of `eval()`**: Executes a string as JavaScript code. When input is attacker-controlled, this enables execution of injected scripts.\r\n\r\n**Root Cause**: Unsanitized invocation of `eval()` on `hash1` and `clonedObj.y`, which are derived from `location.hash` (user-supplied). This bypasses input validation and permits code injection.\r\n\r\n**Mechanism**: An attacker crafts a URL with a malicious hash fragment. When the page runs `eval(hash1)`, the injected code executes in the page context.\r\n\r\n**Risks**:\r\n- **Cross-Site Scripting (XSS)**: Execution of unauthorized scripts in the victim’s browser.\r\n- **Data Theft**: Access to cookies, local storage, or DOM data.\r\n- **Session Hijacking**: Capture of session tokens.\r\n- **Application Manipulation**: Alteration of application logic or state.",
+                    "howToPrevent": "**1. Eliminate `eval()`**: Replace with safer alternatives. For JSON data, use `JSON.parse()`. Avoid dynamic code execution.\r\n\r\n**2. Sanitize Inputs**: Validate and clean all user-derived data. Use libraries like `DOMPurify` to remove malicious content.\r\n\r\n**3. Safe DOM APIs**: Insert content with `textContent` or `innerText` instead of `innerHTML`.\r\n\r\n**4. Content Security Policy (CSP)**: Deploy a policy that disallows `unsafe-eval` and restricts script sources.\r\n\r\n**5. Secure Code Patterns**: Use strict coding practices, such as whitelisting valid values and employing linter rules to detect `eval()` usage.",
+                    "severity": "HIGH",
+                    "language": "HTML",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:L",
+                        "baseScore": "8.3"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "audit"
+                        ],
+                        "technology": [
+                            "browser"
+                        ],
+                        "languages": [
+                            "HTML"
+                        ],
+                        "category": "security",
+                        "confidence": "LOW",
+                        "impact": "MEDIUM",
+                        "likelihood": "LOW"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "step": 1,
+                "file": "/routes/captcha.ts",
+                "line": 15,
+                "function": "captchas",
+                "variables": "Math.floor((Math.random() * 10) + 1)",
+                "operation": "SOURCE - Génération de nombres aléatoires côté serveur",
+                "taint_status": "CLEAN"
+            },
+            {
+                "step": 2,
+                "file": "/routes/captcha.ts",
+                "line": 16,
+                "function": "captchas",
+                "variables": "Math.floor((Math.random() * 10) + 1)",
+                "operation": "SOURCE - Génération de nombres aléatoires côté serveur",
+                "taint_status": "CLEAN"
+            },
+            {
+                "step": 3,
+                "file": "/routes/captcha.ts",
+                "line": 17,
+                "function": "captchas",
+                "variables": "Math.floor((Math.random() * 10) + 1)",
+                "operation": "SOURCE - Génération de nombres aléatoires côté serveur",
+                "taint_status": "CLEAN"
+            },
+            {
+                "step": 4,
+                "file": "/routes/captcha.ts",
+                "line": 19,
+                "function": "captchas",
+                "variables": "operators[Math.floor((Math.random() * 3))]",
+                "operation": "PROCESSING - Sélection aléatoire d'opérateur depuis array prédéfini ['*', '+', '-']",
+                "taint_status": "CLEAN"
+            },
+            {
+                "step": 5,
+                "file": "/routes/captcha.ts",
+                "line": 20,
+                "function": "captchas",
+                "variables": "operators[Math.floor((Math.random() * 3))]",
+                "operation": "PROCESSING - Sélection aléatoire d'opérateur depuis array prédéfini ['*', '+', '-']",
+                "taint_status": "CLEAN"
+            },
+            {
+                "step": 6,
+                "file": "/routes/captcha.ts",
+                "line": 22,
+                "function": "captchas",
+                "variables": "firstTerm.toString() + firstOperator + secondTerm.toString() + secondOperator + thirdTerm.toString()",
+                "operation": "PROCESSING - Concaténation des termes et opérateurs contrôlés par le serveur",
+                "taint_status": "CLEAN"
+            },
+            {
+                "step": 7,
+                "file": "/routes/captcha.ts",
+                "line": 23,
+                "function": "captchas",
+                "variables": "eval(expression)",
+                "operation": "SINK - Évaluation de l'expression mathématique générée côté serveur",
+                "taint_status": "CLEAN"
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "FP",
+            "explanation": "FAUX POSITIF - Code Injection non exploitable. Bien que le code utilise eval() (pattern détecté par SAST), l'expression évaluée est entièrement générée côté serveur sans aucun input utilisateur. Le dataflow montre que toutes les sources sont des Math.random() contrôlés par le serveur, les opérateurs sont sélectionnés depuis un array prédéfini ['*', '+', '-'], et la concaténation ne contient que des données propres. L'expression résultante est toujours une opération mathématique valide (ex: '7+3*2') sans possibilité d'injection de code malveillant. Un scanner SAST signalerait cette vulnérabilité à cause du pattern eval(), mais c'est un faux positif car aucune donnée utilisateur n'atteint le sink."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "c1d2e3f4-a5b6-4c7d-8e9f-1a2b3c4d5e6f",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 29,
+                                "content": "    const expressionBuilder = new CaptchaExpressionBuilder()"
+                            },
+                            {
+                                "line": 30,
+                                "content": "    const evaluator = new ExpressionEvaluator()"
+                            },
+                            {
+                                "line": 31,
+                                "content": ""
+                            },
+                            {
+                                "line": 32,
+                                "content": "    const sessionData = sessionManager.initializeSession(req.session)"
+                            },
+                            {
+                                "line": 33,
+                                "content": "    const headerInfo = headerProcessor.extractCaptchaConfiguration(req.headers)"
+                            }
+                        ],
+                        "id": "d9e8f7c6-b5a4-3c2d-9e8f-7c6b5a4d3c2b",
+                        "vulnerableStartLine": 37,
+                        "vulnerableEndLine": 37,
+                        "startLine": 29,
+                        "endLine": 33,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "c1d2e3f4-a5b6-4c7d-8e9f-1a2b3c4d5e6f",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-08-02T14:30:00.000Z",
+                "updateAt": "2025-08-02T14:30:00.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "HIGH",
+                "currentPriority": "urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/routes/dynamicCaptcha.ts",
+                "vulnerableStartLine": 37,
+                "vulnerableEndLine": 37,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-79"
+                    ],
+                    "owaspTop10": [
+                        "A07:2017 - Cross-Site Scripting (XSS)",
+                        "A03:2021 - Injection"
+                    ],
+                    "cweArray": [
+                        "CWE-79"
+                    ],
+                    "references": [
+                        {
+                            "id": "4db40b5c-f3cd-4f6d-917a-ecd72d1b0a6a",
+                            "name": "OWASP XSS Prevention Cheat Sheet",
+                            "url": "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"
+                        },
+                        {
+                            "id": "f69f278f-cd5d-4c4c-a4b4-246824dd699b",
+                            "name": "OWASP Top 10 2021: Injection",
+                            "url": "https://owasp.org/Top10/A03_2021-Injection"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "eval-detected.html",
+                            "content": "<!-- ruleid: eval-detected -->\n<script>\n    const rootDiv = document.getElementById('root');\n    import { sanitize } from \"dompurify\"\n    const hash = location.hash.slice(1)\n    \n    \n    eval(hash1)\n    \n    const obj2 = { foo: 'baz', y: hash1 };\n    \n    const clonedObj = { ...obj2 };\n    \n    eval(clonedObj.y);\n    \n    // ok: eval-detected\n    eval(\"safe\");\n    \n    \n    \n    </script>"
+                        }
+                    ],
+                    "id": "8cf422b0-3cb8-4bd7-951b-f2793496fa9d",
+                    "name": "Uncontrolled Eval Execution",
+                    "shortDescription": "Use of eval() on untrusted input allows execution of arbitrary scripts, leading to XSS and code injection.",
+                    "description": "**Use of `eval()`**: Executes a string as JavaScript code. When input is attacker-controlled, this enables execution of injected scripts.\r\n\r\n**Root Cause**: Unsanitized invocation of `eval()` on `hash1` and `clonedObj.y`, which are derived from `location.hash` (user-supplied). This bypasses input validation and permits code injection.\r\n\r\n**Mechanism**: An attacker crafts a URL with a malicious hash fragment. When the page runs `eval(hash1)`, the injected code executes in the page context.\r\n\r\n**Risks**:\r\n- **Cross-Site Scripting (XSS)**: Execution of unauthorized scripts in the victim's browser.\r\n- **Data Theft**: Access to cookies, local storage, or DOM data.\r\n- **Session Hijacking**: Capture of session tokens.\r\n- **Application Manipulation**: Alteration of application logic or state.",
+                    "howToPrevent": "**1. Eliminate `eval()`**: Replace with safer alternatives. For JSON data, use `JSON.parse()`. Avoid dynamic code execution.\r\n\r\n**2. Sanitize Inputs**: Validate and clean all user-derived data. Use libraries like `DOMPurify` to remove malicious content.\r\n\r\n**3. Safe DOM APIs**: Insert content with `textContent` or `innerText` instead of `innerHTML`.\r\n\r\n**4. Content Security Policy (CSP)**: Deploy a policy that disallows `unsafe-eval` and restricts script sources.\r\n\r\n**5. Secure Code Patterns**: Use strict coding practices, such as whitelisting valid values and employing linter rules to detect `eval()` usage.",
+                    "severity": "HIGH",
+                    "language": "HTML",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:L",
+                        "baseScore": "8.3"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "audit"
+                        ],
+                        "technology": [
+                            "browser"
+                        ],
+                        "languages": [
+                            "HTML"
+                        ],
+                        "category": "security",
+                        "confidence": "LOW",
+                        "impact": "MEDIUM",
+                        "likelihood": "LOW"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/routes/dynamicCaptcha.ts",
+                "category": "SOURCE",
+                "line": 33,
+                "explanation": "Extraction de configuration depuis headers HTTP utilisateur",
+                "variables": "req.headers"
+            },
+            {
+                "file": "/lib/requestHeaderProcessor.ts",
+                "category": "PROPAGATION",
+                "line": 5,
+                "explanation": "Récupération du header x-captcha-config contrôlé par l'utilisateur",
+                "variables": "headers['x-captcha-config']"
+            },
+            {
+                "file": "/lib/requestHeaderProcessor.ts",
+                "category": "PROPAGATION",
+                "line": 32,
+                "explanation": "Parsing de la configuration utilisateur sans validation stricte",
+                "variables": "config[key.trim()] = value.trim()"
+            },
+            {
+                "file": "/lib/sessionDataProcessor.ts",
+                "category": "PROPAGATION",
+                "line": 46,
+                "explanation": "Ajout d'opérateurs dynamiques incluant fonctions Math",
+                "variables": "baseOps.push('Math.pow', 'Math.sqrt', 'Math.abs')"
+            },
+            {
+                "file": "/lib/captchaExpressionBuilder.ts",
+                "category": "PROPAGATION",
+                "line": 36,
+                "explanation": "Formatage d'opérateurs avancés dans l'expression",
+                "variables": "advancedOps[operator]"
+            },
+            {
+                "file": "/lib/expressionEvaluator.ts",
+                "category": "SINK",
+                "line": 8,
+                "explanation": "Évaluation de l'expression avec fonctions Math injectées",
+                "variables": "eval(sanitizedExpression)"
+            }
+        ],
+        "vulnerability_truth": {
+            "statut": "TP",
+            "explication": "VRAI POSITIF - Code Injection exploitable via header HTTP. Un attaquant peut injecter du code JavaScript arbitraire via le header 'x-captcha-config'. Le dataflow complexe sur 5 fichiers propage les données utilisateur non validées : dynamicCaptcha.ts → requestHeaderProcessor.ts → sessionDataProcessor.ts → captchaExpressionBuilder.ts → expressionEvaluator.ts. Quand le header contient 'complexityBoost=high', des fonctions Math sont ajoutées à l'expression qui est finalement évaluée par eval(). Un attaquant peut exploiter via header: 'x-captcha-config: complexityBoost=high;opStyle=Math.constructor;range=1-10' pour injecter du code via Math.constructor dans l'expression évaluée. Accessible via GET /rest/dynamic-captcha."
+        }
+    }
+]

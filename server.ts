@@ -98,6 +98,7 @@ import { changePassword } from './routes/changePassword'
 import { countryMapping } from './routes/countryMapping'
 import { retrieveAppVersion } from './routes/appVersion'
 import { captchas, verifyCaptcha } from './routes/captcha'
+import { dynamicCaptchas, verifyDynamicCaptcha } from './routes/dynamicCaptcha'
 import * as restoreProgress from './routes/restoreProgress'
 import { checkKeys, nftUnlocked } from './routes/checkKeys'
 import { retrieveLoggedInUser } from './routes/currentUser'
@@ -594,6 +595,7 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   app.put('/rest/continue-code-fixIt/apply/:continueCode', restoreProgress.restoreProgressFixIt())
   app.put('/rest/continue-code/apply/:continueCode', restoreProgress.restoreProgress())
   app.get('/rest/captcha', captchas())
+  app.get('/rest/dynamic-captcha', dynamicCaptchas())
   app.get('/rest/image-captcha', imageCaptchas())
   app.get('/rest/track-order/:id', trackOrder())
   app.get('/rest/country-mapping', countryMapping())

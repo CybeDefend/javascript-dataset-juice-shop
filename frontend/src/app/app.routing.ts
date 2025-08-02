@@ -258,7 +258,7 @@ const routes: Routes = [
 
 export const Routing = RouterModule.forRoot(routes, { useHash: true })
 
-export function oauthMatcher (url: UrlSegment[]): UrlMatchResult {
+export function oauthMatcher(url: UrlSegment[]): UrlMatchResult {
   if (url.length === 0) {
     return null as unknown as UrlMatchResult
   }
@@ -270,7 +270,7 @@ export function oauthMatcher (url: UrlSegment[]): UrlMatchResult {
   return null as unknown as UrlMatchResult
 }
 
-export function tokenMatcher (url: UrlSegment[]): UrlMatchResult { // vuln-code-snippet neutral-line tokenSaleChallenge
+export function tokenMatcher(url: UrlSegment[]): UrlMatchResult { // vuln-code-snippet neutral-line tokenSaleChallenge
   if (url.length === 0) { // vuln-code-snippet neutral-line tokenSaleChallenge
     return null as unknown as UrlMatchResult // vuln-code-snippet neutral-line tokenSaleChallenge
   } // vuln-code-snippet neutral-line tokenSaleChallenge
@@ -284,7 +284,7 @@ export function tokenMatcher (url: UrlSegment[]): UrlMatchResult { // vuln-code-
   return null as unknown as UrlMatchResult // vuln-code-snippet neutral-line tokenSaleChallenge
 } // vuln-code-snippet neutral-line tokenSaleChallenge
 
-export function token1 (...args: number[]) { // vuln-code-snippet neutral-line tokenSaleChallenge
+export function token1(...args: number[]) { // vuln-code-snippet neutral-line tokenSaleChallenge
   const L = Array.prototype.slice.call(args) // vuln-code-snippet neutral-line tokenSaleChallenge
   const D = L.shift() // vuln-code-snippet neutral-line tokenSaleChallenge
   return L.reverse().map(function (C, A) { // vuln-code-snippet neutral-line tokenSaleChallenge
@@ -292,7 +292,7 @@ export function token1 (...args: number[]) { // vuln-code-snippet neutral-line t
   }).join('') // vuln-code-snippet neutral-line tokenSaleChallenge
 } // vuln-code-snippet neutral-line tokenSaleChallenge
 
-export function token2 (...args: number[]) { // vuln-code-snippet neutral-line tokenSaleChallenge
+export function token2(...args: number[]) { // vuln-code-snippet neutral-line tokenSaleChallenge
   const T = Array.prototype.slice.call(arguments) // vuln-code-snippet neutral-line tokenSaleChallenge
   const M = T.shift() // vuln-code-snippet neutral-line tokenSaleChallenge
   return T.reverse().map(function (m, H) { // vuln-code-snippet neutral-line tokenSaleChallenge
