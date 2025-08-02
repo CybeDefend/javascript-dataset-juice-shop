@@ -108,6 +108,7 @@ import { securityQuestion } from './routes/securityQuestion'
 import { servePremiumContent } from './routes/premiumReward'
 import { contractExploitListener } from './routes/web3Wallet'
 import { updateUserProfile } from './routes/updateUserProfile'
+import { processTemplate } from './routes/templateProcessor'
 import { getVideo, promotionVideo } from './routes/videoHandler'
 import { likeProductReviews } from './routes/likeProductReviews'
 import { repeatNotification } from './routes/repeatNotification'
@@ -652,6 +653,7 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   /* Routes for profile page */
   app.get('/profile', security.updateAuthenticatedUsers(), getUserProfile())
   app.post('/profile', updateUserProfile())
+  app.post('/api/admin/profile/template', processTemplate())
 
   /* Route for vulnerable code snippets */
   app.get('/snippets/:challenge', serveCodeSnippet())

@@ -1,189 +1,6 @@
 [
     {
         "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
-        "vulnerabilityId": "a118a0bf-85ed-45bf-9770-c3b18264c0ce",
-        "sast": {
-            "base": {
-                "codeSnippets": [
-                    {
-                        "code": [
-                            {
-                                "line": 31,
-                                "content": "      verifySuccessfulPoisonNullByteExploit(file)"
-                            },
-                            {
-                                "line": 32,
-                                "content": ""
-                            },
-                            {
-                                "line": 33,
-                                "content": "      res.sendFile(path.resolve('ftp/', file))"
-                            },
-                            {
-                                "line": 34,
-                                "content": "    } else {"
-                            },
-                            {
-                                "line": 35,
-                                "content": "      res.status(403)"
-                            }
-                        ],
-                        "id": "66daa70f-941a-4ea1-9ea9-e74feda116c7",
-                        "vulnerableStartLine": 33,
-                        "vulnerableEndLine": 33,
-                        "startLine": 31,
-                        "endLine": 35,
-                        "language": "TypeScript",
-                        "fixAnalysis": "",
-                        "fixAnalysisDescription": ""
-                    }
-                ],
-                "id": "a118a0bf-85ed-45bf-9770-c3b18264c0ce",
-                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
-                "createdAt": "2025-07-31T11:27:12.000Z",
-                "updateAt": "2025-07-31T11:27:12.000Z",
-                "timeToFix": "",
-                "currentState": "to_verify",
-                "currentSeverity": "HIGH",
-                "currentPriority": "urgent",
-                "contextualExplanation": "",
-                "language": "TypeScript",
-                "path": "juice-shop-master/routes/fileServer.ts",
-                "vulnerableStartLine": 33,
-                "vulnerableEndLine": 33,
-                "vulnerability": {
-                    "cwe": [
-                        "CWE-73"
-                    ],
-                    "owaspTop10": [
-                        "A04:2021 - Insecure Design"
-                    ],
-                    "cweArray": [
-                        "CWE-73"
-                    ],
-                    "references": [
-                        {
-                            "id": "11ca9b08-bb11-4de7-85f5-83be571b99f7",
-                            "name": "OWASP Input Validation Cheat Sheet",
-                            "url": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html"
-                        }
-                    ],
-                    "codeExamples": [
-                        {
-                            "filename": "express-res-sendfile.ts",
-                            "content": "import path = require('path')\nimport { Request, Response, NextFunction } from 'express'\n\n\nmodule.exports = function badNormal () {\n  return (req: Request, res: Response, next: NextFunction) => {\n    const file = req.params.file\n    // ruleid: express-res-sendfile\n    res.sendFile(path.resolve('ftp/', file))\n    // ruleid: express-res-sendfile\n    res.sendFile(path.join('/ftp/', file))\n    // ruleid: express-res-sendfile\n    res.sendFile(file)\n  }\n\n\n}\nmodule.exports = function goodNormal () {\n  return (req: Request, res: Response, next: NextFunction) => {\n    const file = 'foo'\n    // ok: express-res-sendfile\n    res.sendFile(path.resolve('ftp/', file))\n    // ok: express-res-sendfile\n    res.sendfile(req.app.get('staticFilePath') + '/index-test.html');\n    // diffrent rule \n    // ok: express-res-sendfile\n    res.sendfile(req.params.foo, {root: '/'});\n    // ok: express-res-sendfile\n    res.sendfile(req.params.foo, options);\n  }\n\n}\n\n\nmodule.exports = function badWithTypes () {\n  return ({ params, query }: Request, res: Response, next: NextFunction) => {\n    const file = params.file\n    // ruleid: express-res-sendfile\n    res.sendFile(path.resolve('ftp/', file))\n    // ruleid: express-res-sendfile\n    res.sendFile(path.join('/ftp/', file))\n    // ruleid: express-res-sendfile\n    res.sendFile(file)\n    // diffrent rule \n    // ok: express-res-sendfile\n    res.sendfile(file, {root: '/'});\n  }\n\n}\n\nmodule.exports = function goodWithTypes () {\n  return ({ params, query, session }: Request, res: Response, next: NextFunction) => {\n    const file = session\n    // ok: express-res-sendfile\n    res.sendFile(path.resolve('ftp/', file))\n  }\n\n}\n\n\nmodule.exports = function advanced () {\n  return ({ params, query }: Request, res: Response, next: NextFunction) => {\n    const file = params.file\n\n    if (!file.includes('/')) {\n      joinModeOrDeepSemgrep(file, res, next)\n    } \n  }\n\n  function joinModeOrDeepSemgrep (file: string, res: Response, next: NextFunction) {\n\n      // ruleid: express-res-sendfile\n      res.sendFile(path.resolve('ftp/', file))\n\n  }\n\n}\n"
-                        }
-                    ],
-                    "id": "2cd0de93-4b5e-43b3-a83b-2bb62d2221a8",
-                    "name": "Express res.sendFile Path Traversal",
-                    "shortDescription": "Unvalidated user input passed to res.sendFile allows arbitrary file reading via path traversal.",
-                    "description": "The application invokes **res.sendFile** with user-controlled data. In functions like `res.sendFile(path.resolve('ftp/', file))` or `res.sendFile(path.join('/ftp/', file))`, attackers can supply `file` values containing `../` segments to traverse directories. This **path traversal** flaw permits reading arbitrary files on the host filesystem. The root cause is lack of input validation and insufficient path canonicalization. Successful exploitation compromises confidentiality by exposing sensitive files, configuration data, or credentials.",
-                    "howToPrevent": "1. **Canonicalize and validate input**: use `path.resolve` on the user input, then verify that the resolved path starts with an allowed base directory.\r\n2. **Whitelist filenames**: maintain an explicit list of allowed file names or patterns.\r\n3. **Use the `root` option**: call `res.sendFile(file, { root: STATIC_BASE_PATH })` instead of concatenating paths manually.\r\n4. **Reject malicious patterns**: reject input containing `..`, absolute paths, or URL-encoded traversal sequences.",
-                    "severity": "HIGH",
-                    "language": "JavaScript",
-                    "vulnerabilityType": "sast",
-                    "cvss3": {
-                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
-                        "baseScore": "7.5"
-                    },
-                    "_cvss3": "cvss3",
-                    "sourceMetadata": {
-                        "subcategory": [
-                            "vuln"
-                        ],
-                        "technology": [
-                            "express"
-                        ],
-                        "languages": [
-                            "JavaScript",
-                            "TypeScript"
-                        ],
-                        "category": "security",
-                        "confidence": "MEDIUM",
-                        "impact": "MEDIUM",
-                        "likelihood": "HIGH"
-                    },
-                    "_sourceMetadata": "sourceMetadata"
-                },
-                "historyItems": {
-                    "items": []
-                },
-                "vulnerabilityType": "sast"
-            }
-        },
-        "vulnerability": "sast",
-        "dataflow": [
-            {
-                "step": 1,
-                "file": "/server.ts",
-                "line": 272,
-                "function": "Express route handler",
-                "variables": "req.params.file",
-                "operation": "SOURCE - Input utilisateur depuis URL parameter /ftp/:file",
-                "taint_status": "TAINTED"
-            },
-            {
-                "step": 2,
-                "file": "/routes/fileServer.ts",
-                "line": 16,
-                "function": "servePublicFiles",
-                "variables": "params.file",
-                "operation": "PROPAGATION - Extraction du paramètre file depuis request params",
-                "taint_status": "TAINTED"
-            },
-            {
-                "step": 3,
-                "file": "/routes/fileServer.ts",
-                "line": 18,
-                "function": "servePublicFiles",
-                "variables": "file.includes('/')",
-                "operation": "VALIDATION - Vérification partielle: bloque '/' mais pas '..'",
-                "taint_status": "TAINTED"
-            },
-            {
-                "step": 4,
-                "file": "/routes/fileServer.ts",
-                "line": 19,
-                "function": "verify",
-                "variables": "file",
-                "operation": "PROPAGATION - Passage à la fonction verify pour validation",
-                "taint_status": "TAINTED"
-            },
-            {
-                "step": 5,
-                "file": "/routes/fileServer.ts",
-                "line": 27,
-                "function": "verify",
-                "variables": "endsWithAllowlistedFileType(file)",
-                "operation": "VALIDATION - Vérification extension .md/.pdf ou incident-support.kdbx",
-                "taint_status": "TAINTED"
-            },
-            {
-                "step": 6,
-                "file": "/routes/fileServer.ts",
-                "line": 28,
-                "function": "verify",
-                "variables": "security.cutOffPoisonNullByte(file)",
-                "operation": "SANITIZATION - Suppression poison null bytes (%00)",
-                "taint_status": "TAINTED"
-            },
-            {
-                "step": 7,
-                "file": "/routes/fileServer.ts",
-                "line": 33,
-                "function": "verify",
-                "variables": "path.resolve('ftp/', file)",
-                "operation": "SINK - Path traversal via res.sendFile avec input utilisateur non sécurisé",
-                "taint_status": "TAINTED"
-            }
-        ],
-        "vulnerability_truth": {
-            "verdict": "TP",
-            "explanation": "VRAI POSITIF - Path Traversal exploitable. Bien que des validations soient en place, elles sont insuffisantes pour empêcher l'exploitation. La vérification !file.includes('/') bloque seulement les forward slashes directs mais n'empêche pas l'utilisation de '../' pour remonter les répertoires. Un attaquant peut exploiter avec des payloads comme '../../../etc/passwd.md' (avec extension requise) ou '../../../etc/passwd%00.md' (pour contourner la validation d'extension). Le cutOffPoisonNullByte() aide partiellement mais ne résout pas le problème fondamental de path traversal. Accessible via GET /ftp/[payload] où [payload] peut être '../../../etc/passwd.md'."
-        }
-    },
-    {
-        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
         "vulnerabilityId": "d042708e-80c6-4641-8ac7-4dfef5cb592f",
         "sast": {
             "base": {
@@ -299,7 +116,76 @@
                 "vulnerabilityType": "sast"
             }
         },
-        "vulnerability": "sast"
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/server.ts",
+                "category": "source",
+                "line": 654,
+                "explanation": "Route Express POST /profile accessible depuis l'extérieur",
+                "variables": ["req.body.username"]
+            },
+            {
+                "file": "/routes/updateUserProfile.ts",
+                "category": "propagation",
+                "line": 15,
+                "explanation": "Fonction updateUserProfile reçoit req.body.username",
+                "variables": ["req.body.username"]
+            },
+            {
+                "file": "/routes/updateUserProfile.ts",
+                "category": "propagation",
+                "line": 36,
+                "explanation": "Mise à jour du username en base de données",
+                "variables": ["req.body.username"]
+            },
+            {
+                "file": "/server.ts", 
+                "category": "propagation",
+                "line": 653,
+                "explanation": "Route Express GET /profile accessible depuis l'extérieur",
+                "variables": []
+            },
+            {
+                "file": "/routes/userProfile.ts",
+                "category": "propagation", 
+                "line": 25,
+                "explanation": "Fonction getUserProfile récupère l'utilisateur",
+                "variables": []
+            },
+            {
+                "file": "/routes/userProfile.ts",
+                "category": "propagation",
+                "line": 53,
+                "explanation": "Extraction du username depuis la base de données",
+                "variables": ["username"]
+            },
+            {
+                "file": "/routes/userProfile.ts",
+                "category": "propagation",
+                "line": 55,
+                "explanation": "Vérification du pattern #{...} et activation du challenge",
+                "variables": ["username"]
+            },
+            {
+                "file": "/routes/userProfile.ts",
+                "category": "propagation",
+                "line": 57,
+                "explanation": "Extraction du code entre #{...}",
+                "variables": ["code"]
+            },
+            {
+                "file": "/routes/userProfile.ts",
+                "category": "sink",
+                "line": 62,
+                "explanation": "Exécution directe via eval() sans validation",
+                "variables": ["code"]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "TP",
+            "explanation": "VRAI POSITIF - Code Injection exploitable. Un utilisateur peut modifier son username via POST /profile en injectant du code JavaScript dans le format #{code}. Quand il accède à GET /profile, si le challenge usernameXssChallenge est activé et que son username match le pattern #{...}, le contenu entre les accolades est directement passé à eval() sans validation. Un attaqueur peut exécuter du code JavaScript arbitraire côté serveur (ex: #{process.exit()} ou #{require('fs').readFileSync('/etc/passwd')})."
+        }
     },
     {
         "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
@@ -1482,98 +1368,85 @@
     },
     {
         "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
-        "vulnerabilityId": "b7f8c9d0-4e5f-6a7b-8c9d-2e3f4a5b6c7d",
+        "vulnerabilityId": "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
         "sast": {
             "base": {
                 "codeSnippets": [
                     {
                         "code": [
                             {
-                                "line": 31,
-                                "content": "      "
-                            },
-                            {
-                                "line": 32,
-                                "content": "      res.sendFile(path.resolve('documents/', documentPath))"
-                            },
-                            {
-                                "line": 33,
-                                "content": "    } catch (error) {"
-                            },
-                            {
-                                "line": 34,
-                                "content": "      next(error)"
+                                "line": 44,
+                                "content": "      const safeResult = eval(sanitizedExpression)"
                             }
                         ],
-                        "id": "h8i9j0k1-l2m3-4n5o-6p7q-8r9s0t1u2v3w",
-                        "vulnerableStartLine": 32,
-                        "vulnerableEndLine": 32,
-                        "startLine": 31,
-                        "endLine": 34,
+                        "id": "eval-template-processor",
+                        "vulnerableStartLine": 44,
+                        "vulnerableEndLine": 44,
+                        "startLine": 42,
+                        "endLine": 46,
                         "language": "TypeScript",
                         "fixAnalysis": "",
                         "fixAnalysisDescription": ""
                     }
                 ],
-                "id": "b7f8c9d0-4e5f-6a7b-8c9d-2e3f4a5b6c7d",
+                "id": "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
                 "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
-                "createdAt": "2025-08-02T14:30:00.000Z",
-                "updateAt": "2025-08-02T14:30:00.000Z",
+                "createdAt": "2025-08-02T15:30:00.000Z",
+                "updateAt": "2025-08-02T15:30:00.000Z",
                 "timeToFix": "",
                 "currentState": "to_verify",
                 "currentSeverity": "HIGH",
                 "currentPriority": "urgent",
                 "contextualExplanation": "",
                 "language": "TypeScript",
-                "path": "juice-shop-master/routes/validatedDocumentServer.ts",
-                "vulnerableStartLine": 32,
-                "vulnerableEndLine": 32,
+                "path": "juice-shop-master/lib/safeEvaluator.ts",
+                "vulnerableStartLine": 44,
+                "vulnerableEndLine": 44,
                 "vulnerability": {
                     "cwe": [
-                        "CWE-73"
+                        "CWE-79"
                     ],
                     "owaspTop10": [
-                        "A04:2021 - Insecure Design"
+                        "A03:2021 - Injection"
                     ],
                     "cweArray": [
-                        "CWE-73"
+                        "CWE-79"
                     ],
                     "references": [
                         {
-                            "id": "11ca9b08-bb11-4de7-85f5-83be571b99f7",
-                            "name": "OWASP Input Validation Cheat Sheet",
-                            "url": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html"
+                            "id": "4db40b5c-f3cd-4f6d-917a-ecd72d1b0a6a",
+                            "name": "OWASP XSS Prevention Cheat Sheet",
+                            "url": "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"
                         }
                     ],
                     "codeExamples": [],
-                    "id": "2cd0de93-4b5e-43b3-a83b-2bb62d2221a8",
-                    "name": "Express res.sendFile Path Traversal",
-                    "shortDescription": "Unvalidated user input passed to res.sendFile allows arbitrary file reading via path traversal.",
-                    "description": "The application invokes **res.sendFile** with user-controlled data. In functions like `res.sendFile(path.resolve('documents/', file))` or `res.sendFile(path.join('/documents/', file))`, attackers can supply `file` values containing `../` segments to traverse directories. This **path traversal** flaw permits reading arbitrary files on the host filesystem. The root cause is lack of input validation and insufficient path canonicalization. Successful exploitation compromises confidentiality by exposing sensitive files, configuration data, or credentials.",
-                    "howToPrevent": "1. **Canonicalize and validate input**: use `path.resolve` on the user input, then verify that the resolved path starts with an allowed base directory.\r\n2. **Whitelist filenames**: maintain an explicit list of allowed file names or patterns.\r\n3. **Use the `root` option**: call `res.sendFile(file, { root: STATIC_BASE_PATH })` instead of concatenating paths manually.\r\n4. **Reject malicious patterns**: reject input containing `..`, absolute paths, or URL-encoded traversal sequences.",
+                    "id": "8cf422b0-3cb8-4bd7-951b-f2793496fa9d",
+                    "name": "Uncontrolled Eval Execution",
+                    "shortDescription": "Use of eval() on untrusted input allows execution of arbitrary scripts, leading to XSS and code injection.",
+                    "description": "Use of eval() executes a string as JavaScript code. When input is attacker-controlled, this enables execution of injected scripts.",
+                    "howToPrevent": "Eliminate eval(), use JSON.parse() for JSON data, sanitize inputs, use safe DOM APIs, deploy CSP policies.",
                     "severity": "HIGH",
-                    "language": "JavaScript",
+                    "language": "TypeScript",
                     "vulnerabilityType": "sast",
                     "cvss3": {
-                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
-                        "baseScore": "7.5"
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:L",
+                        "baseScore": "8.3"
                     },
                     "_cvss3": "cvss3",
                     "sourceMetadata": {
                         "subcategory": [
-                            "vuln"
+                            "audit"
                         ],
                         "technology": [
                             "express"
                         ],
                         "languages": [
-                            "JavaScript",
                             "TypeScript"
                         ],
                         "category": "security",
                         "confidence": "MEDIUM",
-                        "impact": "MEDIUM",
-                        "likelihood": "HIGH"
+                        "impact": "HIGH",
+                        "likelihood": "MEDIUM"
                     },
                     "_sourceMetadata": "sourceMetadata"
                 },
@@ -1586,117 +1459,93 @@
         "vulnerability": "sast",
         "dataflow": [
             {
-                "step": 1,
                 "file": "/server.ts",
-                "line": 276,
-                "function": "Express route handler",
-                "variables": "req.params.documentId",
-                "operation": "SOURCE - Input utilisateur depuis URL parameter /api/documents/:documentId",
-                "taint_status": "TAINTED"
+                "category": "source",
+                "line": 656,
+                "explanation": "Route Express POST /api/admin/profile/template accessible par admin",
+                "variables": ["req.body.templateExpression"]
             },
             {
-                "step": 2,
-                "file": "/routes/validatedDocumentServer.ts",
-                "line": 12,
-                "function": "serveValidatedDocuments",
-                "variables": "resourceIdentifier",
-                "operation": "PROPAGATION - Extraction du paramètre documentId depuis request params",
-                "taint_status": "TAINTED"
+                "file": "/routes/templateProcessor.ts",
+                "category": "propagation",
+                "line": 13,
+                "explanation": "Fonction processTemplate reçoit templateExpression utilisateur",
+                "variables": ["templateData"]
             },
             {
-                "step": 3,
-                "file": "/routes/validatedDocumentServer.ts",
-                "line": 17,
-                "function": "serveValidatedDocuments",
-                "variables": "sanitizer.processDocumentRequest(resourceIdentifier, userContext)",
-                "operation": "PROCESSING - Envoi vers RequestSanitizer pour nettoyage complet",
-                "taint_status": "TAINTED"
+                "file": "/routes/templateProcessor.ts",
+                "category": "propagation",
+                "line": 27,
+                "explanation": "Création du ValidationPipeline pour traitement sécurisé",
+                "variables": ["templateData"]
             },
             {
-                "step": 4,
-                "file": "/lib/requestSanitizer.ts",
-                "line": 19,
-                "function": "processDocumentRequest",
-                "variables": "normalizer.sanitizeDocumentIdentifier(identifier)",
-                "operation": "SANITIZATION - Suppression aggressive de tous patterns dangereux",
-                "taint_status": "SANITIZING"
-            },
-            {
-                "step": 5,
-                "file": "/lib/inputNormalizer.ts",
-                "line": 11,
-                "function": "sanitizeDocumentIdentifier",
-                "variables": "cleaned après suppression patterns '../', '%2e%2e', etc.",
-                "operation": "SANITIZATION - Nettoyage complet de 14 patterns path traversal",
-                "taint_status": "SANITIZING"
-            },
-            {
-                "step": 6,
-                "file": "/lib/requestSanitizer.ts",
-                "line": 26,
-                "function": "processDocumentRequest",
-                "variables": "validator.validatePathSafety(normalizedInput, userContext)",
-                "operation": "VALIDATION - Validation stricte via PathValidator",
-                "taint_status": "SANITIZING"
-            },
-            {
-                "step": 7,
-                "file": "/lib/pathValidator.ts",
-                "line": 31,
-                "function": "validatePathSafety",
-                "variables": "path.resolve(baseDir, normalizedInput)",
-                "operation": "VALIDATION - Vérification que le chemin résolu reste dans baseDir",
-                "taint_status": "CLEAN"
-            },
-            {
-                "step": 8,
-                "file": "/lib/pathValidator.ts",
-                "line": 38,
-                "function": "validatePathSafety",
-                "variables": "allowedDocuments.has(fileName)",
-                "operation": "VALIDATION - Vérification whitelist stricte des 6 documents autorisés",
-                "taint_status": "CLEAN"
-            },
-            {
-                "step": 9,
-                "file": "/routes/validatedDocumentServer.ts",
-                "line": 26,
-                "function": "serveValidatedDocuments",
-                "variables": "accessManager.resolveSecureDocumentPath(cleanIdentifier, req.ip)",
-                "operation": "PROCESSING - Résolution sécurisée via DocumentAccessManager",
-                "taint_status": "CLEAN"
-            },
-            {
-                "step": 10,
-                "file": "/lib/documentAccessManager.ts",
+                "file": "/lib/validationPipeline.ts",
+                "category": "propagation",
                 "line": 21,
-                "function": "resolveSecureDocumentPath",
-                "variables": "documentRegistry.get(documentId)",
-                "operation": "MAPPING - Mapping strict vers chemins prédéfinis en interne",
-                "taint_status": "CLEAN"
+                "explanation": "Pipeline de validation en 3 étapes via classes dédiées",
+                "variables": ["userInput"]
             },
             {
-                "step": 11,
-                "file": "/lib/documentAccessManager.ts",
-                "line": 41,
-                "function": "sanitizeInternalPath",
-                "variables": "path.normalize(internalPath)",
-                "operation": "FINAL_SANITIZATION - Normalisation finale et vérification prefixes autorisés",
-                "taint_status": "CLEAN"
+                "file": "/lib/templateValidator.ts",
+                "category": "propagation",
+                "line": 7,
+                "explanation": "Validation stricte - rejette patterns eval, require, process",
+                "variables": ["input"]
             },
             {
-                "step": 12,
-                "file": "/routes/validatedDocumentServer.ts",
-                "line": 32,
-                "function": "serveValidatedDocuments",
-                "variables": "path.resolve('documents/', documentPath)",
-                "operation": "SINK - res.sendFile avec chemin entièrement validé et sécurisé",
-                "taint_status": "CLEAN"
+                "file": "/lib/scriptSanitizer.ts",
+                "category": "propagation",
+                "line": 11,
+                "explanation": "Nettoyage des scripts et échappement HTML complet",
+                "variables": ["input"]
+            },
+            {
+                "file": "/lib/expressionCleaner.ts",
+                "category": "propagation",
+                "line": 7,
+                "explanation": "Purification finale - bloque tokens malicieux et limite aux math",
+                "variables": ["input"]
+            },
+            {
+                "file": "/lib/validationPipeline.ts",
+                "category": "propagation",
+                "line": 27,
+                "explanation": "Contrôle final de sécurité - supprime caractères dangereux",
+                "variables": ["input"]
+            },
+            {
+                "file": "/routes/templateProcessor.ts",
+                "category": "propagation",
+                "line": 30,
+                "explanation": "Transmission des données sanitisées vers SafeEvaluator",
+                "variables": ["secureData"]
+            },
+            {
+                "file": "/lib/safeEvaluator.ts",
+                "category": "propagation",
+                "line": 19,
+                "explanation": "Validation numérique finale - seules expressions math autorisées",
+                "variables": ["input"]
+            },
+            {
+                "file": "/lib/safeEvaluator.ts",
+                "category": "propagation",
+                "line": 24,
+                "explanation": "Nettoyage final - suppression caractères non-numériques",
+                "variables": ["sanitizedExpression"]
+            },
+            {
+                "file": "/lib/safeEvaluator.ts",
+                "category": "sink",
+                "line": 30,
+                "explanation": "Eval sécurisé sur expression numérique pure post-sanitisation complète",
+                "variables": ["sanitizedExpression"]
             }
         ],
         "vulnerability_truth": {
             "verdict": "FP",
-            "explanation": "FAUX POSITIF - Path Traversal NON exploitable. Bien que le scanner SAST détecte le pattern res.sendFile(path.resolve()), cette implémentation est sécurisée par un pipeline de validation complexe sur 5 fichiers. Le dataflow montre une défense en profondeur : InputNormalizer supprime 14 patterns de path traversal, PathValidator vérifie que le chemin résolu reste dans le répertoire autorisé ET utilise une whitelist stricte de 6 documents, DocumentAccessManager mappe vers des chemins internes prédéfinis avec validation des préfixes autorisés. L'input utilisateur ne peut jamais atteindre le sink sous forme dangereuse - seuls les 6 documents whitelistés peuvent être servis depuis leurs emplacements prédéfinis. Accessible via GET /api/documents/[documentId] mais impossible d'exploiter."
+            "explanation": "FAUX POSITIF - Utilisation sécurisée d'eval(). Bien qu'un scanner SAST détecte eval() ligne 30 de safeEvaluator.ts, les données utilisateur passent par un pipeline de sécurité sur 6 fichiers différents. Le TemplateValidator rejette tous patterns dangereux (eval, require, process), le ScriptSanitizer échappe HTML, l'ExpressionCleaner bloque tokens malicieux et force math uniquement, le ValidationPipeline supprime caractères spéciaux, et enfin SafeEvaluator ne garde que caractères numériques/opérateurs. L'eval() final ne peut exécuter que des calculs mathématiques purs (ex: '2+3*4'), rendant l'injection impossible."
         }
     }
 ]
