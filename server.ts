@@ -132,6 +132,7 @@ import { serveCodeFixes, checkCorrectFix } from './routes/vulnCodeFixes'
 import { imageCaptchas, verifyImageCaptcha } from './routes/imageCaptcha'
 import { upgradeToDeluxe, deluxeMembershipStatus } from './routes/deluxe'
 import { serveCodeSnippet, checkVulnLines } from './routes/vulnCodeSnippet'
+import { advancedProductSearch } from './routes/productSearchEngine'
 import { orderHistory, allOrders, toggleDeliveryStatus } from './routes/orderHistory'
 import { continueCode, continueCodeFindIt, continueCodeFixIt } from './routes/continueCode'
 import { ensureFileIsPassed, handleZipFileUpload, checkUploadSize, checkFileType, handleXmlUpload, handleYamlUpload } from './routes/fileUpload'
@@ -670,6 +671,9 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   app.post('/snippets/verdict', checkVulnLines())
   app.get('/snippets/fixes/:key', serveCodeFixes())
   app.post('/snippets/fixes', checkCorrectFix())
+
+  /* Advanced product search route */
+  app.get('/api/products/search', advancedProductSearch())
 
   app.use(serveAngularClient())
 
