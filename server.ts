@@ -67,6 +67,8 @@ import { login } from './routes/login'
 import * as verify from './routes/verify'
 import * as address from './routes/address'
 import * as chatbot from './routes/chatbot'
+import * as chatbotAnalytics from './routes/chatbotAnalytics'
+import * as analytics from './routes/analytics'
 import * as metrics from './routes/metrics'
 import * as payment from './routes/payment'
 import { placeOrder } from './routes/order'
@@ -620,6 +622,8 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   app.get('/rest/memories', getMemories())
   app.get('/rest/chatbot/status', chatbot.status())
   app.post('/rest/chatbot/respond', chatbot.process())
+  app.post('/api/analytics/report', analytics.analytics())
+  app.post('/api/chatbot/analytics', chatbotAnalytics.generateAnalytics())
   /* NoSQL API endpoints */
   app.get('/rest/products/:id/reviews', showProductReviews())
   app.put('/rest/products/:id/reviews', createProductReviews())

@@ -3268,5 +3268,358 @@
             "verdict": "FP",
             "explanation": "FAUX POSITIF - Path Traversal NON exploitable. Bien que le scanner SAST détecte le pattern res.sendFile(path.resolve()), cette implémentation est sécurisée par un pipeline de validation complexe sur 5 fichiers. Le dataflow montre une défense en profondeur : InputNormalizer supprime 14 patterns de path traversal, PathValidator vérifie que le chemin résolu reste dans le répertoire autorisé ET utilise une whitelist stricte de 6 documents, DocumentAccessManager mappe vers des chemins internes prédéfinis avec validation des préfixes autorisés. L'input utilisateur ne peut jamais atteindre le sink sous forme dangereuse - seuls les 6 documents whitelistés peuvent être servis depuis leurs emplacements prédéfinis. Accessible via GET /api/documents/[documentId] mais impossible d'exploiter."
         }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "e12b6bd9-7cfd-4dd1-a5a6-3d954ac3304a",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 12,
+                                "content": ""
+                            },
+                            {
+                                "line": 13,
+                                "content": "    if (!file.includes('/')) {"
+                            },
+                            {
+                                "line": 14,
+                                "content": "      res.sendFile(path.resolve('encryptionkeys/', file))"
+                            },
+                            {
+                                "line": 15,
+                                "content": "    } else {"
+                            },
+                            {
+                                "line": 16,
+                                "content": "      res.status(403)"
+                            }
+                        ],
+                        "id": "c3bf3f43-e844-461e-b3bf-62c76a3617e4",
+                        "vulnerableStartLine": 14,
+                        "vulnerableEndLine": 14,
+                        "startLine": 12,
+                        "endLine": 16,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "e12b6bd9-7cfd-4dd1-a5a6-3d954ac3304a",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T11:27:12.000Z",
+                "updateAt": "2025-07-31T11:27:12.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "HIGH",
+                "currentPriority": "urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/routes/keyServer.ts",
+                "vulnerableStartLine": 14,
+                "vulnerableEndLine": 14,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-73"
+                    ],
+                    "owaspTop10": [
+                        "A04:2021 - Insecure Design"
+                    ],
+                    "cweArray": [
+                        "CWE-73"
+                    ],
+                    "references": [
+                        {
+                            "id": "11ca9b08-bb11-4de7-85f5-83be571b99f7",
+                            "name": "OWASP Input Validation Cheat Sheet",
+                            "url": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "express-res-sendfile.ts",
+                            "content": "import path = require('path')\nimport { Request, Response, NextFunction } from 'express'\n\n\nmodule.exports = function badNormal () {\n  return (req: Request, res: Response, next: NextFunction) => {\n    const file = req.params.file\n    // ruleid: express-res-sendfile\n    res.sendFile(path.resolve('ftp/', file))\n    // ruleid: express-res-sendfile\n    res.sendFile(path.join('/ftp/', file))\n    // ruleid: express-res-sendfile\n    res.sendFile(file)\n  }\n\n\n}\nmodule.exports = function goodNormal () {\n  return (req: Request, res: Response, next: NextFunction) => {\n    const file = 'foo'\n    // ok: express-res-sendfile\n    res.sendFile(path.resolve('ftp/', file))\n    // ok: express-res-sendfile\n    res.sendfile(req.app.get('staticFilePath') + '/index-test.html');\n    // diffrent rule \n    // ok: express-res-sendfile\n    res.sendfile(req.params.foo, {root: '/'});\n    // ok: express-res-sendfile\n    res.sendfile(req.params.foo, options);\n  }\n\n}\n\n\nmodule.exports = function badWithTypes () {\n  return ({ params, query }: Request, res: Response, next: NextFunction) => {\n    const file = params.file\n    // ruleid: express-res-sendfile\n    res.sendFile(path.resolve('ftp/', file))\n    // ruleid: express-res-sendfile\n    res.sendFile(path.join('/ftp/', file))\n    // ruleid: express-res-sendfile\n    res.sendFile(file)\n    // diffrent rule \n    // ok: express-res-sendfile\n    res.sendfile(file, {root: '/'});\n  }\n\n}\n\nmodule.exports = function goodWithTypes () {\n  return ({ params, query, session }: Request, res: Response, next: NextFunction) => {\n    const file = session\n    // ok: express-res-sendfile\n    res.sendFile(path.resolve('ftp/', file))\n  }\n\n}\n\n\nmodule.exports = function advanced () {\n  return ({ params, query }: Request, res: Response, next: NextFunction) => {\n    const file = params.file\n\n    if (!file.includes('/')) {\n      joinModeOrDeepSemgrep(file, res, next)\n    } \n  }\n\n  function joinModeOrDeepSemgrep (file: string, res: Response, next: NextFunction) {\n\n      // ruleid: express-res-sendfile\n      res.sendFile(path.resolve('ftp/', file))\n\n  }\n\n}\n"
+                        }
+                    ],
+                    "id": "2cd0de93-4b5e-43b3-a83b-2bb62d2221a8",
+                    "name": "Express res.sendFile Path Traversal",
+                    "shortDescription": "Unvalidated user input passed to res.sendFile allows arbitrary file reading via path traversal.",
+                    "description": "The application invokes **res.sendFile** with user-controlled data. In functions like `res.sendFile(path.resolve('ftp/', file))` or `res.sendFile(path.join('/ftp/', file))`, attackers can supply `file` values containing `../` segments to traverse directories. This **path traversal** flaw permits reading arbitrary files on the host filesystem. The root cause is lack of input validation and insufficient path canonicalization. Successful exploitation compromises confidentiality by exposing sensitive files, configuration data, or credentials.",
+                    "howToPrevent": "1. **Canonicalize and validate input**: use `path.resolve` on the user input, then verify that the resolved path starts with an allowed base directory.\r\n2. **Whitelist filenames**: maintain an explicit list of allowed file names or patterns.\r\n3. **Use the `root` option**: call `res.sendFile(file, { root: STATIC_BASE_PATH })` instead of concatenating paths manually.\r\n4. **Reject malicious patterns**: reject input containing `..`, absolute paths, or URL-encoded traversal sequences.",
+                    "severity": "HIGH",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+                        "baseScore": "7.5"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "vuln"
+                        ],
+                        "technology": [
+                            "express"
+                        ],
+                        "languages": [
+                            "JavaScript",
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "MEDIUM",
+                        "impact": "MEDIUM",
+                        "likelihood": "HIGH"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/server.ts",
+                "category": "source",
+                "line": 285,
+                "explanation": "Route Express GET /encryptionkeys/:file accessible depuis l'extérieur",
+                "variables": [
+                    "params.file"
+                ]
+            },
+            {
+                "file": "/routes/keyServer.ts",
+                "category": "propagation",
+                "line": 10,
+                "explanation": "Fonction serveKeyFiles reçoit les paramètres de la requête",
+                "variables": [
+                    "params"
+                ]
+            },
+            {
+                "file": "/routes/keyServer.ts",
+                "category": "propagation",
+                "line": 11,
+                "explanation": "Extraction du paramètre file depuis params.file",
+                "variables": [
+                    "file"
+                ]
+            },
+            {
+                "file": "/routes/keyServer.ts",
+                "category": "propagation",
+                "line": 13,
+                "explanation": "Validation insuffisante - ne vérifie que l'absence de '/' mais pas '..'",
+                "variables": [
+                    "file"
+                ]
+            },
+            {
+                "file": "/routes/keyServer.ts",
+                "category": "sink",
+                "line": 14,
+                "explanation": "Path traversal via res.sendFile avec input utilisateur non sanitisé",
+                "variables": [
+                    "file"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "TP",
+            "explanation": "VRAI POSITIF - Path Traversal exploitable. Un utilisateur peut accéder à GET /encryptionkeys/:file et injecter des séquences de traversée de répertoire. La validation if (!file.includes('/')) est insuffisante car elle ne bloque pas les patterns '..' qui permettent de remonter dans l'arborescence. Un attaquant peut utiliser des payloads comme '../../../etc/passwd' ou '....//....//etc//passwd' pour lire des fichiers arbitraires du système via res.sendFile(path.resolve('encryptionkeys/', file))."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "b2c3d4e5-6f7a-8b9c-0d1e-2f3a4b5c6d7e",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 25,
+                                "content": "      res.sendFile(path.resolve('documents/', finalPath))"
+                            }
+                        ],
+                        "id": "secure-document-server",
+                        "vulnerableStartLine": 25,
+                        "vulnerableEndLine": 25,
+                        "startLine": 23,
+                        "endLine": 27,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "b2c3d4e5-6f7a-8b9c-0d1e-2f3a4b5c6d7e",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-08-02T16:00:00.000Z",
+                "updateAt": "2025-08-02T16:00:00.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "HIGH",
+                "currentPriority": "urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/routes/secureDocumentServer.ts",
+                "vulnerableStartLine": 25,
+                "vulnerableEndLine": 25,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-73"
+                    ],
+                    "owaspTop10": [
+                        "A04:2021 - Insecure Design"
+                    ],
+                    "cweArray": [
+                        "CWE-73"
+                    ],
+                    "references": [
+                        {
+                            "id": "11ca9b08-bb11-4de7-85f5-83be571b99f7",
+                            "name": "OWASP Input Validation Cheat Sheet",
+                            "url": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html"
+                        }
+                    ],
+                    "codeExamples": [],
+                    "id": "2cd0de93-4b5e-43b3-a83b-2bb62d2221a8",
+                    "name": "Express res.sendFile Path Traversal",
+                    "shortDescription": "Unvalidated user input passed to res.sendFile allows arbitrary file reading via path traversal.",
+                    "description": "The application invokes res.sendFile with user-controlled data allowing path traversal attacks.",
+                    "howToPrevent": "Canonicalize and validate input, use whitelists, use root option, reject malicious patterns.",
+                    "severity": "HIGH",
+                    "language": "TypeScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+                        "baseScore": "7.5"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "vuln"
+                        ],
+                        "technology": [
+                            "express"
+                        ],
+                        "languages": [
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "MEDIUM",
+                        "impact": "MEDIUM",
+                        "likelihood": "HIGH"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/server.ts",
+                "category": "source",
+                "line": 286,
+                "explanation": "Route Express GET /api/secure/documents/:id accessible depuis l'extérieur",
+                "variables": [
+                    "params.id"
+                ]
+            },
+            {
+                "file": "/routes/secureDocumentServer.ts",
+                "category": "propagation",
+                "line": 13,
+                "explanation": "Fonction serveSecureDocuments reçoit les paramètres de la requête",
+                "variables": [
+                    "documentId"
+                ]
+            },
+            {
+                "file": "/lib/documentValidator.ts",
+                "category": "propagation",
+                "line": 7,
+                "explanation": "Validation stricte interdisant caractères et patterns dangereux",
+                "variables": [
+                    "input"
+                ]
+            },
+            {
+                "file": "/lib/pathBuilder.ts",
+                "category": "propagation",
+                "line": 21,
+                "explanation": "Sanitisation via InputNormalizer supprimant séquences de traversée",
+                "variables": [
+                    "documentId"
+                ]
+            },
+            {
+                "file": "/lib/inputNormalizer.ts",
+                "category": "propagation",
+                "line": 7,
+                "explanation": "Nettoyage complet des patterns de path traversal et URL encoding",
+                "variables": [
+                    "input"
+                ]
+            },
+            {
+                "file": "/lib/pathBuilder.ts",
+                "category": "propagation",
+                "line": 29,
+                "explanation": "Validation par whitelist de documents autorisés uniquement",
+                "variables": [
+                    "normalizedId"
+                ]
+            },
+            {
+                "file": "/lib/securityChecker.ts",
+                "category": "propagation",
+                "line": 20,
+                "explanation": "Validation de sécurité finale via PathValidator",
+                "variables": [
+                    "filePath"
+                ]
+            },
+            {
+                "file": "/lib/pathValidator.ts",
+                "category": "propagation",
+                "line": 31,
+                "explanation": "Vérification anti-traversal et whitelist de fichiers autorisés",
+                "variables": [
+                    "normalizedInput"
+                ]
+            },
+            {
+                "file": "/lib/securityAuditLogger.ts",
+                "category": "propagation",
+                "line": 23,
+                "explanation": "Audit de sécurité et logging des tentatives d'accès",
+                "variables": [
+                    "normalizedInput"
+                ]
+            },
+            {
+                "file": "/routes/secureDocumentServer.ts",
+                "category": "sink",
+                "line": 25,
+                "explanation": "res.sendFile sécurisé avec chemin validé par pipeline multi-couches",
+                "variables": [
+                    "finalPath"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "FP",
+            "explanation": "FAUX POSITIF - Path Traversal sécurisé. Bien qu'un scanner SAST détecte res.sendFile(path.resolve('documents/', finalPath)) ligne 25, les données utilisateur passent par un pipeline de sécurité sur 6 fichiers différents. DocumentValidator bloque caractères dangereux et patterns de traversée, InputNormalizer supprime toutes séquences '../' et variantes URL-encodées, PathBuilder applique une whitelist stricte de documents autorisés, PathValidator vérifie l'absence de traversée et utilise une allowlist, SecurityChecker effectue des contrôles finaux, et SecurityAuditLogger audit tous accès. Le chemin final ne peut contenir que des noms de fichiers whitelistés sans possibilité de traversée."
+        }
     }
 ]
