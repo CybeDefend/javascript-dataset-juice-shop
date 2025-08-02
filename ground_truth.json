@@ -2073,7 +2073,147 @@
                 "vulnerabilityType": "sast"
             }
         },
-        "vulnerability": "sast"
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/server.ts",
+                "category": "SOURCE",
+                "ligne": 283,
+                "explication": "Route '/support/logs/:file' expose le paramètre file via URL",
+                "variables": ":file"
+            },
+            {
+                "file": "/routes/logfileServer.ts",
+                "category": "ETAPE",
+                "ligne": 11,
+                "explication": "Extraction du paramètre file depuis params",
+                "variables": "params.file"
+            },
+            {
+                "file": "/routes/logfileServer.ts",
+                "category": "ETAPE",
+                "ligne": 13,
+                "explication": "Validation insuffisante - vérifie seulement l'absence de '/'",
+                "variables": "file"
+            },
+            {
+                "file": "/routes/logfileServer.ts",
+                "category": "SINK",
+                "ligne": 14,
+                "explication": "Path traversal via path.resolve avec données utilisateur non validées",
+                "variables": "file"
+            }
+        ],
+        "vulnerability_truth": {
+            "statut": "TP",
+            "explication": "VRAI POSITIF - Path Traversal exploitable. La validation !file.includes('/') est insuffisante car elle n'empêche pas l'utilisation de '..' seul pour remonter de répertoire. Un attaquant peut accéder à /support/logs/.. pour obtenir path.resolve('logs/', '..') qui résout vers le répertoire parent, permettant l'accès à des fichiers en dehors du répertoire logs/"
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "sast": {
+            "base": {
+                "codeSnippets": [],
+                "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T11:27:12.000Z",
+                "updateAt": "2025-07-31T11:27:12.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "HIGH",
+                "currentPriority": "urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/routes/secureLogfileServer.ts",
+                "vulnerableStartLine": 22,
+                "vulnerableEndLine": 22,
+                "vulnerability": {
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/server.ts",
+                "category": "SOURCE",
+                "ligne": 285,
+                "explication": "Route '/support/secure-logs/:file' expose le paramètre file via URL",
+                "variables": ":file"
+            },
+            {
+                "file": "/routes/secureLogfileServer.ts",
+                "category": "ETAPE",
+                "ligne": 14,
+                "explication": "Extraction du paramètre file depuis params",
+                "variables": "params.file"
+            },
+            {
+                "file": "/routes/secureLogfileServer.ts",
+                "category": "ETAPE",
+                "ligne": 18,
+                "explication": "Initialisation session avec données de sécurité",
+                "variables": "sessionId, userAgent, ip"
+            },
+            {
+                "file": "/lib/secureSessionCollector.ts",
+                "category": "ETAPE",
+                "ligne": 32,
+                "explication": "Délégation du traitement à RequestProcessor",
+                "variables": "filename"
+            },
+            {
+                "file": "/lib/requestProcessor.ts",
+                "category": "ETAPE",
+                "ligne": 16,
+                "explication": "Preprocessing et nettoyage de l'input",
+                "variables": "sanitizedInput"
+            },
+            {
+                "file": "/lib/requestProcessor.ts",
+                "category": "ETAPE",
+                "ligne": 17,
+                "explication": "Validation par SecurityManager",
+                "variables": "sanitizedInput"
+            },
+            {
+                "file": "/lib/securityManager.ts",
+                "category": "ETAPE",
+                "ligne": 35,
+                "explication": "Récupération du PathNormalizer pour contexte 'logs'",
+                "variables": "filename"
+            },
+            {
+                "file": "/lib/pathNormalizer.ts",
+                "category": "ETAPE",
+                "ligne": 14,
+                "explication": "Normalisation et validation complète du chemin",
+                "variables": "filename"
+            },
+            {
+                "file": "/lib/pathNormalizer.ts",
+                "category": "ETAPE",
+                "ligne": 27,
+                "explication": "Vérification path traversal - chemin normalisé doit commencer par basePath",
+                "variables": "normalizedPath"
+            },
+            {
+                "file": "/routes/secureLogfileServer.ts",
+                "category": "SINK",
+                "ligne": 22,
+                "explication": "Appel vulnérable res.sendFile avec données utilisateur (même pattern que vulnérabilité originale)",
+                "variables": "file"
+            }
+        ],
+        "vulnerability_truth": {
+            "statut": "FP",
+            "explication": "FAUX POSITIF - Validation de sécurité efficace malgré l'apparence vulnérable. Bien que le pattern res.sendFile(path.resolve('logs/', file)) soit identique au code vulnérable, un pipeline de sécurité complexe sur 5 fichiers valide l'input : 1) PathNormalizer vérifie que le chemin résolu commence par le répertoire de base empêchant path traversal, 2) Validation des extensions autorisées (.log, .txt), 3) Limitation de profondeur de répertoire, 4) Preprocessing qui nettoie l'input malveillant. Un scanner SAST détectera cette vulnérabilité par pattern matching mais c'est un faux positif car les mesures de sécurité multi-couches empêchent l'exploitation."
+        }
     },
     {
         "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
