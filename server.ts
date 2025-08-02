@@ -88,6 +88,7 @@ import { serveKeyFiles } from './routes/keyServer'
 import { serveSecureDocuments } from './routes/secureDocumentServer'
 import * as basketItems from './routes/basketItems'
 import { performRedirect } from './routes/redirect'
+import { handleSecureNavigation } from './routes/navigationHelper'
 import { serveEasterEgg } from './routes/easterEgg'
 import { getLanguageList } from './routes/languages'
 import { getUserProfile } from './routes/userProfile'
@@ -655,6 +656,9 @@ restoreOverwrittenFilesWithOriginals().then(() => {
 
   /* Route for redirects */
   app.get('/redirect', performRedirect())
+
+  /* Secure navigation helper route */
+  app.get('/api/navigation/secure', handleSecureNavigation())
 
   /* Routes for promotion video page */
   app.get('/promotion', promotionVideo())
