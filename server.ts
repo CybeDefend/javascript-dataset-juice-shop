@@ -93,6 +93,7 @@ import { resetPassword } from './routes/resetPassword'
 import { serveLogFiles } from './routes/logfileServer'
 import { serveSecureLogFiles } from './routes/secureLogfileServer'
 import { servePublicFiles } from './routes/fileServer'
+import { serveValidatedDocuments } from './routes/validatedDocumentServer'
 import { addMemory, getMemories } from './routes/memory'
 import { changePassword } from './routes/changePassword'
 import { countryMapping } from './routes/countryMapping'
@@ -271,6 +272,9 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   app.use('/ftp', serveIndexMiddleware, serveIndex('ftp', { icons: true })) // vuln-code-snippet vuln-line directoryListingChallenge
   app.use('/ftp(?!/quarantine)/:file', servePublicFiles()) // vuln-code-snippet vuln-line directoryListingChallenge
   app.use('/ftp/quarantine/:file', serveQuarantineFiles()) // vuln-code-snippet neutral-line directoryListingChallenge
+
+  /* Secure document serving */
+  app.use('/api/documents/:documentId', serveValidatedDocuments())
 
   app.use('/.well-known', serveIndexMiddleware, serveIndex('.well-known', { icons: true, view: 'details' }))
   app.use('/.well-known', express.static('.well-known'))
