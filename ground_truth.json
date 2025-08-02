@@ -1407,7 +1407,247 @@
                 "vulnerabilityType": "sast"
             }
         },
-        "vulnerability": "sast"
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/data/static/codefixes/dbSchemaChallenge_3.ts",
+                "category": "sink",
+                "line": 11,
+                "explanation": "Requête SQL avec injection directe via template literal - MAIS code inaccessible",
+                "variables": [
+                    "criteria"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "FP",
+            "explanation": "FAUX POSITIF - Dead Code. Bien que la fonction searchProducts contienne une vulnérabilité SQL injection exploitable (ligne 6-7: validation regex insuffisante qui peut être contournée + ligne 11: injection directe via template literal), cette fonction n'est jamais appelée par l'application. Le serveur importe searchProducts depuis './routes/search.ts' et non depuis ce fichier statique. Le fichier '/data/static/codefixes/dbSchemaChallenge_3.ts' est du code mort (dead code) qui ne présente aucun risque car il n'est jamais exécuté."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "3e8d7f6a-4b2c-3d1e-9f8a-5c6b7a8d9e0f",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 30,
+                                "content": "    // Add custom criteria if present"
+                            },
+                            {
+                                "line": 31,
+                                "content": "    if (config.customFilters && config.customFilters.additionalCriteria) {"
+                            },
+                            {
+                                "line": 32,
+                                "content": "      baseQuery += \" AND (\" + config.customFilters.additionalCriteria + \")\""
+                            },
+                            {
+                                "line": 33,
+                                "content": "    }"
+                            }
+                        ],
+                        "id": "f2a3b4c5-d6e7-8901-2345-6789abcdef01",
+                        "vulnerableStartLine": 32,
+                        "vulnerableEndLine": 32,
+                        "startLine": 30,
+                        "endLine": 33,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "3e8d7f6a-4b2c-3d1e-9f8a-5c6b7a8d9e0f",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-08-02T16:00:00.000Z",
+                "updateAt": "2025-08-02T16:00:00.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "CRITICAL",
+                "currentPriority": "critical_urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/lib/enhancedProductSearchService.ts",
+                "vulnerableStartLine": 32,
+                "vulnerableEndLine": 32,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-89"
+                    ],
+                    "owaspTop10": [
+                        "A01:2017 - Injection",
+                        "A03:2021 - Injection"
+                    ],
+                    "cweArray": [
+                        "CWE-89"
+                    ],
+                    "references": [
+                        {
+                            "id": "938f6798-3d60-44b1-9b0a-e01b7775de3f",
+                            "name": "Sequelize Raw Queries – Replacements",
+                            "url": "https://sequelize.org/docs/v6/core-concepts/raw-queries/#replacements"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "sequelize-injection-express.ts",
+                            "content": "import m = require('../m/index')\nimport { Request, Response, NextFunction } from 'express'\n\nmodule.exports = function search () {\n  return (req: Request, res: Response, next: NextFunction) => {\n    let criteria = req.query.foo\n    // ok: express-sequelize-injection\n    m.sequelize.query(\n      'SELECT * FROM projects WHERE status = ?',\n      {\n        replacements: [req.body.foo],\n        type: QueryTypes.SELECT\n      }\n    )\n    // ok: express-sequelize-injection\n    m.sequelize.query(\n      'SELECT * FROM projects WHERE status = ?',\n      {\n        replacements: [req.body.foo],\n        type: QueryTypes.SELECT\n      }\n    )\n    let obj =  {\n        replacements: [req.body.foo],\n        type: QueryTypes.SELECT\n      }\n    // ok: express-sequelize-injection\n    let projects = 'projects'\n      sequelize.query(\n        `SELECT * FROM ${projects} WHERE status = ?`,\n        obj\n      )\n    // ruleid: express-sequelize-injection\n    m.sequelize.query(`SELECT * FROM Foo WHERE ((criteria LIKE '%${criteria}%))`) \n    // ruleid: express-sequelize-injection\n    sequelize.query(`SELECT * FROM Foo WHERE ((criteria LIKE '%${obj.replacements[0]}%))`) \n  }\n}"
+                        }
+                    ],
+                    "id": "9638a945-c68a-483b-accb-2e84160840a1",
+                    "name": "Sequelize SQL Injection via Tainted Query",
+                    "shortDescription": "User-controlled input is directly interpolated into a Sequelize raw query, enabling SQL injection.",
+                    "description": "**Root Cause**: The application constructs raw SQL using template literals with unvalidated user input (`req.query.foo`) passed directly into `sequelize.query`. This allows an attacker to inject arbitrary SQL.  \r\n\r\n**Mechanism**: The backtick interpolation (`${criteria}`) inserts unsanitized data into the query string. When executed, the database engine parses injected fragments as part of the SQL command.  \r\n\r\n**Risks**:  \r\n- **Data Exfiltration**: Unauthorized read access to all database tables.  \r\n- **Data Manipulation**: Potential for INSERT, UPDATE, DELETE operations.  \r\n- **Privilege Escalation**: Execution of administrative commands if the DB user has elevated rights.  \r\n- **Denial of Service**: Dropping tables or locking resources.",
+                    "howToPrevent": "- Use **parameterized queries** or **prepared statements** instead of string interpolation.  \r\n  ```js\r\n  // Safe: replacements ensure proper escaping\r\n  const [results] = await sequelize.query(\r\n    'SELECT * FROM Foo WHERE criteria LIKE :search',\r\n    {\r\n      replacements: { search: `%${req.query.foo}%` },\r\n      type: QueryTypes.SELECT\r\n    }\r\n  );\r\n  ```  \r\n- Validate and sanitize input: enforce type, length, and pattern checks on query parameters before use.  \r\n- Use ORM methods where possible (`Model.findAll({ where: { criteria: { [Op.like]: `%${value}%` } } })`) to leverage built-in escaping.  \r\n- Employ an input **allowlist** for expected values and reject unexpected characters.",
+                    "severity": "CRITICAL",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                        "baseScore": "9.8"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "vuln"
+                        ],
+                        "technology": [
+                            "express"
+                        ],
+                        "languages": [
+                            "JavaScript",
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "HIGH",
+                        "impact": "HIGH",
+                        "likelihood": "HIGH"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "lib/configurationLoader.ts",
+                "category": "source",
+                "line": 10,
+                "explanation": "Variable d'environnement ENHANCED_SEARCH_CONFIG lue comme source d'injection",
+                "variables": [
+                    "process.env.ENHANCED_SEARCH_CONFIG"
+                ]
+            },
+            {
+                "file": "lib/configurationLoader.ts",
+                "category": "propagation",
+                "line": 21,
+                "explanation": "Fallback parsing - payload assigné directement sans validation",
+                "variables": [
+                    "configPayload"
+                ]
+            },
+            {
+                "file": "lib/configurationLoader.ts",
+                "category": "propagation",
+                "line": 37,
+                "explanation": "Configuration simple construite avec payload non validé",
+                "variables": [
+                    "payload"
+                ]
+            },
+            {
+                "file": "lib/sessionDataCollector.ts",
+                "category": "propagation",
+                "line": 16,
+                "explanation": "Configuration environment chargée et propagée",
+                "variables": [
+                    "environmentConfig"
+                ]
+            },
+            {
+                "file": "lib/sessionDataCollector.ts",
+                "category": "propagation",
+                "line": 35,
+                "explanation": "Critères custom extraits de la configuration",
+                "variables": [
+                    "config.enhancedFeatures.searchModule.criteria"
+                ]
+            },
+            {
+                "file": "lib/productCacheManager.ts",
+                "category": "propagation",
+                "line": 16,
+                "explanation": "Données session collectées et traitées",
+                "variables": [
+                    "sessionData"
+                ]
+            },
+            {
+                "file": "lib/productCacheManager.ts",
+                "category": "propagation",
+                "line": 34,
+                "explanation": "Configuration avancée construite avec critères non validés",
+                "variables": [
+                    "envConfig.searchEnhancements.customCriteria"
+                ]
+            },
+            {
+                "file": "lib/productQueryFilter.ts",
+                "category": "propagation",
+                "line": 15,
+                "explanation": "Filtres cached récupérés du cache manager",
+                "variables": [
+                    "cachedFilters"
+                ]
+            },
+            {
+                "file": "lib/productQueryFilter.ts",
+                "category": "propagation",
+                "line": 30,
+                "explanation": "Critères additionnels extraits des filtres cached",
+                "variables": [
+                    "cachedData.userPreferences.advancedSearch.criteria"
+                ]
+            },
+            {
+                "file": "lib/enhancedProductSearchService.ts",
+                "category": "propagation",
+                "line": 17,
+                "explanation": "Configuration query construite avec filtres non validés",
+                "variables": [
+                    "queryConfig"
+                ]
+            },
+            {
+                "file": "lib/enhancedProductSearchService.ts",
+                "category": "sink",
+                "line": 32,
+                "explanation": "Injection SQL directe - critères additionnels concaténés sans échappement",
+                "variables": [
+                    "config.customFilters.additionalCriteria"
+                ]
+            },
+            {
+                "file": "lib/enhancedProductSearchService.ts",
+                "category": "sink",
+                "line": 45,
+                "explanation": "Requête SQL vulnérable exécutée via sequelize.query",
+                "variables": [
+                    "query"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "TP",
+            "explanation": "VRAI POSITIF - SQL Injection exploitable via variable d'environnement. Dataflow complexe sur 6 fichiers : la variable ENHANCED_SEARCH_CONFIG est lue depuis l'environnement, propagée à travers ConfigurationLoader → SessionDataCollector → ProductCacheManager → ProductQueryFilter → EnhancedProductSearchService, puis injectée directement dans la requête SQL sans validation ni échappement. Un attaquant contrôlant la variable d'environnement peut injecter du SQL arbitraire (ex: ENHANCED_SEARCH_CONFIG='description LIKE \\'%\\') OR 1=1 --' pour contourner les conditions). Code activement utilisé via routes/enhancedProductSearch.ts."
+        }
     },
     {
         "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
