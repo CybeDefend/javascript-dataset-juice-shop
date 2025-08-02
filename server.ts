@@ -83,6 +83,7 @@ import { searchProducts } from './routes/search'
 import { trackOrder } from './routes/trackOrder'
 import { saveLoginIp } from './routes/saveLoginIp'
 import { serveKeyFiles } from './routes/keyServer'
+import { serveSecureDocuments } from './routes/secureDocumentServer'
 import * as basketItems from './routes/basketItems'
 import { performRedirect } from './routes/redirect'
 import { serveEasterEgg } from './routes/easterEgg'
@@ -283,6 +284,7 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   /* /encryptionkeys directory browsing */
   app.use('/encryptionkeys', serveIndexMiddleware, serveIndex('encryptionkeys', { icons: true, view: 'details' }))
   app.use('/encryptionkeys/:file', serveKeyFiles())
+  app.use('/api/secure/documents/:id', serveSecureDocuments())
 
   /* /logs directory browsing */ // vuln-code-snippet neutral-line accessLogDisclosureChallenge
   app.use('/support/logs', serveIndexMiddleware, serveIndex('logs', { icons: true, view: 'details' })) // vuln-code-snippet vuln-line accessLogDisclosureChallenge
