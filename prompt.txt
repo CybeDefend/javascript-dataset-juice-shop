@@ -77,5 +77,6 @@ Je vais maintenant te détailler chaque étape qu’il faudra faire pour réalis
 				2. Logique de Vulnérabilité Dissimulée :
 					* Cas d'un FAUX POSITIF : La mesure de sécurité (nettoyage, validation, etc.) qui rend la vulnérabilité inoffensive doit être implémentée de manière subtile et non-évidente.
 					* Cas d'un VRAI POSITIF : La source de la donnée "contaminée" (l'injection) doit être discrète. Évitez les input() évidents et privilégiez des points d'entrée réalistes mais cachés (paramètres d'API, cookies, headers HTTP, etc.).
+		- INTEGRATION ET ACCESSIBILITE EXTERNE : Le nouveau code vulnérable ne doit JAMAIS être du code mort (dead code). Vous devez l'intégrer pleinement dans l'application en vous assurant qu'il est appelable depuis un point d'entrée externe (ex: une nouvelle route API, un endpoint de formulaire, etc.). Un utilisateur ou un service extérieur doit pouvoir déclencher le chemin d'exécution menant à la vulnérabilité.
 
 Suis le process détaillé donné ci-dessus pour cette vulnérabilité : 

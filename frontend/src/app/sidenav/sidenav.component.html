@@ -228,6 +228,13 @@
       {{"TITLE_SCORE_BOARD" | translate}}
     </span>
   </a>
+  <a *ngIf="scoreBoardVisible" mat-list-item routerLink="/enhanced-tutorial" (click)="onToggleSidenav()"
+     aria-label="Open enhanced tutorial">
+    <mat-icon>school</mat-icon>
+    <span class="menu-text truncate">
+      Enhanced Tutorial
+    </span>
+  </a>
   <a *ngIf="!scoreBoardVisible && offerScoreBoardTutorial" mat-list-item (click)="startHackingInstructor()"
      aria-label="Launch beginners tutorial">
     <mat-icon>school</mat-icon>

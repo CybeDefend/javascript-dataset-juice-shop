@@ -42,6 +42,7 @@ import { DeluxeUserComponent } from './deluxe-user/deluxe-user.component'
 import { AccountingGuard, AdminGuard, LoginGuard } from './app.guard'
 import { NFTUnlockComponent } from './nft-unlock/nft-unlock.component'
 import { ScoreBoardComponent } from './score-board/score-board.component'
+import { EnhancedTutorialComponent } from './enhanced-tutorial/enhanced-tutorial.component'
 
 const loadFaucetModule = async () => {
   const module = await import('./faucet/faucet.module')
@@ -168,6 +169,10 @@ const routes: Routes = [
   {
     path: 'hacking-instructor',
     component: SearchResultComponent
+  },
+  {
+    path: 'enhanced-tutorial',
+    component: EnhancedTutorialComponent
   },
   { // vuln-code-snippet neutral-line scoreBoardChallenge
     path: 'score-board', // vuln-code-snippet vuln-line scoreBoardChallenge

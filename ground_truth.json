@@ -2328,7 +2328,190 @@
                 "vulnerabilityType": "sast"
             }
         },
-        "vulnerability": "sast"
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/frontend/src/app/search-result/search-result.component.ts",
+                "category": "SOURCE",
+                "ligne": 110,
+                "explication": "Paramètre URL challenge extrait depuis route.snapshot.queryParams",
+                "variables": "challenge"
+            },
+            {
+                "file": "/frontend/src/app/search-result/search-result.component.ts",
+                "category": "ETAPE",
+                "ligne": 111,
+                "explication": "Décodage URL et appel startHackingInstructor avec données utilisateur",
+                "variables": "decodeURIComponent(challenge)"
+            },
+            {
+                "file": "/frontend/src/app/search-result/search-result.component.ts",
+                "category": "ETAPE",
+                "ligne": 178,
+                "explication": "Transfert vers module hacking-instructor",
+                "variables": "challengeName"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/index.ts",
+                "category": "ETAPE",
+                "ligne": 187,
+                "explication": "Recherche instruction par nom ou fallback vers TutorialUnavailableInstruction",
+                "variables": "challengeName"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/index.ts",
+                "category": "ETAPE",
+                "ligne": 189,
+                "explication": "Itération sur hints avec contenu statique prédéfini",
+                "variables": "hint"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/index.ts",
+                "category": "ETAPE",
+                "ligne": 190,
+                "explication": "Appel loadHint avec hint statique",
+                "variables": "hint"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/index.ts",
+                "category": "ETAPE",
+                "ligne": 122,
+                "explication": "Parsing Markdown du texte statique prédéfini",
+                "variables": "hint.text"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/index.ts",
+                "category": "SINK",
+                "ligne": 122,
+                "explication": "Assignment innerHTML avec contenu statique parsé par snarkdown",
+                "variables": "snarkdown(hint.text)"
+            }
+        ],
+        "vulnerability_truth": {
+            "statut": "FP",
+            "explication": "FAUX POSITIF - Données contrôlées et statiques. Bien que textBox.innerHTML reçoive des données via snarkdown(), le contenu hint.text provient exclusivement de fichiers statiques hardcodés dans le code source (/challenges/*.ts). Même si un utilisateur peut contrôler le paramètre challengeName via l'URL, il ne peut pas injecter de contenu arbitraire car les texts des hints sont prédéfinis. Au pire, il peut déclencher TutorialUnavailableInstruction avec un texte fixe. Le pattern innerHTML est détecté par le scanner mais n'est pas exploitable car aucune donnée utilisateur n'atteint réellement le sink."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "b1c2d3e4-f5a6-7b8c-9d0e-f1a2b3c4d5e6",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                ],
+                "id": "b1c2d3e4-f5a6-7b8c-9d0e-f1a2b3c4d5e6",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T11:27:11.000Z",
+                "updateAt": "2025-07-31T11:27:11.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "HIGH",
+                "currentPriority": "urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/frontend/src/hacking-instructor/enhancedIndex.ts",
+                "vulnerableStartLine": 99,
+                "vulnerableEndLine": 99,
+                "vulnerability": {
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/frontend/src/app/enhanced-tutorial/enhanced-tutorial.component.ts",
+                "category": "SOURCE",
+                "ligne": 22,
+                "explication": "Paramètre URL customization extrait depuis route.snapshot.queryParams",
+                "variables": "customization"
+            },
+            {
+                "file": "/frontend/src/app/enhanced-tutorial/enhanced-tutorial.component.ts",
+                "category": "ETAPE",
+                "ligne": 25,
+                "explication": "Appel startEnhancedTutorial avec données utilisateur non validées",
+                "variables": "customization"
+            },
+            {
+                "file": "/frontend/src/app/enhanced-tutorial/enhanced-tutorial.component.ts",
+                "category": "ETAPE",
+                "ligne": 35,
+                "explication": "Transfert vers module enhancedIndex avec customPrefs utilisateur",
+                "variables": "customPrefs"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/enhancedIndex.ts",
+                "category": "ETAPE",
+                "ligne": 183,
+                "explication": "Initialisation session avec customPrefs utilisateur",
+                "variables": "customPrefs"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/sessionConfigurationManager.ts",
+                "category": "ETAPE",
+                "ligne": 32,
+                "explication": "Mise à jour des préférences avec hintCustomization",
+                "variables": "customPrefs"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/preferencesLoader.ts",
+                "category": "ETAPE",
+                "ligne": 29,
+                "explication": "Stockage des préférences utilisateur sans validation",
+                "variables": "prefs.hintCustomization"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/enhancedIndex.ts",
+                "category": "ETAPE",
+                "ligne": 98,
+                "explication": "Appel processSessionHint avec données utilisateur",
+                "variables": "hint.text"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/sessionConfigurationManager.ts",
+                "category": "ETAPE",
+                "ligne": 47,
+                "explication": "Traitement des hints personnalisés avec données utilisateur",
+                "variables": "hintContent"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/hintTemplateProcessor.ts",
+                "category": "ETAPE",
+                "ligne": 37,
+                "explication": "Traitement de hint personnalisé sans échappement",
+                "variables": "content"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/personalizationEngine.ts",
+                "category": "ETAPE",
+                "ligne": 22,
+                "explication": "Formatage avec données utilisateur via hintCustomization",
+                "variables": "inputData"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/personalizationEngine.ts",
+                "category": "ETAPE",
+                "ligne": 34,
+                "explication": "Concaténation données utilisateur dans chaîne finale",
+                "variables": "preferences.hintCustomization"
+            },
+            {
+                "file": "/frontend/src/hacking-instructor/enhancedIndex.ts",
+                "category": "SINK",
+                "ligne": 99,
+                "explication": "Injection XSS via innerHTML avec données utilisateur non échappées",
+                "variables": "snarkdown(enhancedText)"
+            }
+        ],
+        "vulnerability_truth": {
+            "statut": "TP",
+            "explication": "VRAI POSITIF - XSS exploitable via système de personnalisation. Le paramètre URL 'customization' permet à un attaquant d'injecter du HTML/JavaScript arbitraire qui transite par un dataflow complexe sur 6 fichiers : enhanced-tutorial.component.ts → sessionConfigurationManager.ts → preferencesLoader.ts → personalizationEngine.ts → hintTemplateProcessor.ts → enhancedIndex.ts. Les données utilisateur sont stockées dans hintCustomization puis concaténées dans la chaîne finale sans échappement avant d'être passées à snarkdown() et innerHTML. La route /enhanced-tutorial est accessible via le sidenav (bouton menu) quand le score-board est visible. Un attaquant peut exploiter via URL: /#/enhanced-tutorial?challenge=test&customization=<script>alert('XSS')</script> pour exécuter du JavaScript arbitraire."
+        }
     },
     {
         "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
