@@ -3998,5 +3998,733 @@
             "verdict": "TP",
             "explanation": "True Positive: Cette vulnérabilité XSS est exploitable car les données utilisateur provenant de req.body.referrer ou req.headers.referer transitent par 5 fichiers différents sans sanitisation avant d'être injectées dans un template HTML. Un attacker peut envoyer POST /api/analytics/report avec referrer: '<script>alert(1)</script>' et le payload sera exécuté dans le navigateur car res.send() retourne du HTML avec Content-Type text/html."
         }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "f9cdf013-c559-4df4-8b7c-91f9e6ebe7e6",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 12,
+                                "content": ""
+                            },
+                            {
+                                "line": 13,
+                                "content": "    if (!file.includes('/')) {"
+                            },
+                            {
+                                "line": 14,
+                                "content": "      res.sendFile(path.resolve('ftp/quarantine/', file))"
+                            },
+                            {
+                                "line": 15,
+                                "content": "    } else {"
+                            },
+                            {
+                                "line": 16,
+                                "content": "      res.status(403)"
+                            }
+                        ],
+                        "id": "772124dc-523e-499e-b18d-9edd5721e59e",
+                        "vulnerableStartLine": 14,
+                        "vulnerableEndLine": 14,
+                        "startLine": 12,
+                        "endLine": 16,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "f9cdf013-c559-4df4-8b7c-91f9e6ebe7e6",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T11:27:12.000Z",
+                "updateAt": "2025-07-31T11:27:12.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "HIGH",
+                "currentPriority": "urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/routes/quarantineServer.ts",
+                "vulnerableStartLine": 14,
+                "vulnerableEndLine": 14,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-73"
+                    ],
+                    "owaspTop10": [
+                        "A04:2021 - Insecure Design"
+                    ],
+                    "cweArray": [
+                        "CWE-73"
+                    ],
+                    "references": [
+                        {
+                            "id": "11ca9b08-bb11-4de7-85f5-83be571b99f7",
+                            "name": "OWASP Input Validation Cheat Sheet",
+                            "url": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "express-res-sendfile.ts",
+                            "content": "import path = require('path')\nimport { Request, Response, NextFunction } from 'express'\n\n\nmodule.exports = function badNormal () {\n  return (req: Request, res: Response, next: NextFunction) => {\n    const file = req.params.file\n    // ruleid: express-res-sendfile\n    res.sendFile(path.resolve('ftp/', file))\n    // ruleid: express-res-sendfile\n    res.sendFile(path.join('/ftp/', file))\n    // ruleid: express-res-sendfile\n    res.sendFile(file)\n  }\n\n\n}\nmodule.exports = function goodNormal () {\n  return (req: Request, res: Response, next: NextFunction) => {\n    const file = 'foo'\n    // ok: express-res-sendfile\n    res.sendFile(path.resolve('ftp/', file))\n    // ok: express-res-sendfile\n    res.sendfile(req.app.get('staticFilePath') + '/index-test.html');\n    // diffrent rule \n    // ok: express-res-sendfile\n    res.sendfile(req.params.foo, {root: '/'});\n    // ok: express-res-sendfile\n    res.sendfile(req.params.foo, options);\n  }\n\n}\n\n\nmodule.exports = function badWithTypes () {\n  return ({ params, query }: Request, res: Response, next: NextFunction) => {\n    const file = params.file\n    // ruleid: express-res-sendfile\n    res.sendFile(path.resolve('ftp/', file))\n    // ruleid: express-res-sendfile\n    res.sendFile(path.join('/ftp/', file))\n    // ruleid: express-res-sendfile\n    res.sendFile(file)\n    // diffrent rule \n    // ok: express-res-sendfile\n    res.sendfile(file, {root: '/'});\n  }\n\n}\n\nmodule.exports = function goodWithTypes () {\n  return ({ params, query, session }: Request, res: Response, next: NextFunction) => {\n    const file = session\n    // ok: express-res-sendfile\n    res.sendFile(path.resolve('ftp/', file))\n  }\n\n}\n\n\nmodule.exports = function advanced () {\n  return ({ params, query }: Request, res: Response, next: NextFunction) => {\n    const file = params.file\n\n    if (!file.includes('/')) {\n      joinModeOrDeepSemgrep(file, res, next)\n    } \n  }\n\n  function joinModeOrDeepSemgrep (file: string, res: Response, next: NextFunction) {\n\n      // ruleid: express-res-sendfile\n      res.sendFile(path.resolve('ftp/', file))\n\n  }\n\n}\n"
+                        }
+                    ],
+                    "id": "2cd0de93-4b5e-43b3-a83b-2bb62d2221a8",
+                    "name": "Express res.sendFile Path Traversal",
+                    "shortDescription": "Unvalidated user input passed to res.sendFile allows arbitrary file reading via path traversal.",
+                    "description": "The application invokes **res.sendFile** with user-controlled data. In functions like `res.sendFile(path.resolve('ftp/', file))` or `res.sendFile(path.join('/ftp/', file))`, attackers can supply `file` values containing `../` segments to traverse directories. This **path traversal** flaw permits reading arbitrary files on the host filesystem. The root cause is lack of input validation and insufficient path canonicalization. Successful exploitation compromises confidentiality by exposing sensitive files, configuration data, or credentials.",
+                    "howToPrevent": "1. **Canonicalize and validate input**: use `path.resolve` on the user input, then verify that the resolved path starts with an allowed base directory.\r\n2. **Whitelist filenames**: maintain an explicit list of allowed file names or patterns.\r\n3. **Use the `root` option**: call `res.sendFile(file, { root: STATIC_BASE_PATH })` instead of concatenating paths manually.\r\n4. **Reject malicious patterns**: reject input containing `..`, absolute paths, or URL-encoded traversal sequences.",
+                    "severity": "HIGH",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+                        "baseScore": "7.5"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "vuln"
+                        ],
+                        "technology": [
+                            "express"
+                        ],
+                        "languages": [
+                            "JavaScript",
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "MEDIUM",
+                        "impact": "MEDIUM",
+                        "likelihood": "HIGH"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/server.ts",
+                "category": "source",
+                "line": 278,
+                "explanation": "Route GET /ftp/quarantine/:file - point d'entrée HTTP public",
+                "variables": [
+                    "params.file"
+                ]
+            },
+            {
+                "file": "/routes/quarantineServer.ts",
+                "category": "propagation",
+                "line": 10,
+                "explanation": "Extraction du paramètre file depuis l'URL params.file",
+                "variables": [
+                    "file"
+                ]
+            },
+            {
+                "file": "/routes/quarantineServer.ts",
+                "category": "propagation",
+                "line": 13,
+                "explanation": "Validation faible - vérifie seulement l'absence de slash '/'",
+                "variables": [
+                    "file"
+                ]
+            },
+            {
+                "file": "/routes/quarantineServer.ts",
+                "category": "sink",
+                "line": 14,
+                "explanation": "Path traversal via res.sendFile avec path.resolve non sécurisé",
+                "variables": [
+                    "file"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "TP",
+            "explanation": "True Positive: Vulnérabilité de Path Traversal exploitable. La validation !file.includes('/') est insuffisante car elle ne bloque que les slashes simples. Un attaqueur peut utiliser des techniques comme l'URL encoding (%2E%2E%2F pour ../), les backslashes, ou d'autres caractères pour contourner cette protection et accéder à des fichiers arbitraires en dehors du dossier ftp/quarantine/. Le path.resolve ne sécurise pas contre les séquences de traversal encodées."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "a2b3c4d5-6e7f-8a9b-0c1d-2e3f4a5b6c7d",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 19,
+                                "content": "    }"
+                            },
+                            {
+                                "line": 20,
+                                "content": ""
+                            },
+                            {
+                                "line": 21,
+                                "content": "    res.sendFile(handlerResult.filePath)"
+                            },
+                            {
+                                "line": 22,
+                                "content": "  }"
+                            },
+                            {
+                                "line": 23,
+                                "content": "}"
+                            }
+                        ],
+                        "id": "b3c4d5e6-7f8a-9b0c-1d2e-3f4a5b6c7d8e",
+                        "vulnerableStartLine": 21,
+                        "vulnerableEndLine": 21,
+                        "startLine": 19,
+                        "endLine": 23,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "a2b3c4d5-6e7f-8a9b-0c1d-2e3f4a5b6c7d",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-08-02T16:00:00.000Z",
+                "updateAt": "2025-08-02T16:00:00.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "HIGH",
+                "currentPriority": "urgent",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/routes/secureDocumentAccess.ts",
+                "vulnerableStartLine": 21,
+                "vulnerableEndLine": 21,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-73"
+                    ],
+                    "owaspTop10": [
+                        "A04:2021 - Insecure Design"
+                    ],
+                    "cweArray": [
+                        "CWE-73"
+                    ],
+                    "references": [
+                        {
+                            "id": "11ca9b08-bb11-4de7-85f5-83be571b99f7",
+                            "name": "OWASP Input Validation Cheat Sheet",
+                            "url": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html"
+                        }
+                    ],
+                    "codeExamples": [],
+                    "id": "2cd0de93-4b5e-43b3-a83b-2bb62d2221a8",
+                    "name": "Express res.sendFile Path Traversal",
+                    "shortDescription": "Unvalidated user input passed to res.sendFile allows arbitrary file reading via path traversal.",
+                    "description": "The application invokes **res.sendFile** with user-controlled data. In functions like `res.sendFile(path.resolve('ftp/', file))` or `res.sendFile(path.join('/ftp/', file))`, attackers can supply `file` values containing `../` segments to traverse directories. This **path traversal** flaw permits reading arbitrary files on the host filesystem. The root cause is lack of input validation and insufficient path canonicalization. Successful exploitation compromises confidentiality by exposing sensitive files, configuration data, or credentials.",
+                    "howToPrevent": "1. **Canonicalize and validate input**: use `path.resolve` on the user input, then verify that the resolved path starts with an allowed base directory.\r\n2. **Whitelist filenames**: maintain an explicit list of allowed file names or patterns.\r\n3. **Use the `root` option**: call `res.sendFile(file, { root: STATIC_BASE_PATH })` instead of concatenating paths manually.\r\n4. **Reject malicious patterns**: reject input containing `..`, absolute paths, or URL-encoded traversal sequences.",
+                    "severity": "HIGH",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+                        "baseScore": "7.5"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "vuln"
+                        ],
+                        "technology": [
+                            "express"
+                        ],
+                        "languages": [
+                            "JavaScript",
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "MEDIUM",
+                        "impact": "MEDIUM",
+                        "likelihood": "HIGH"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast"
+            }
+        },
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/server.ts",
+                "category": "source",
+                "line": 279,
+                "explanation": "Route GET /api/secure/documents/:filename - point d'entrée HTTP public",
+                "variables": [
+                    "params.filename"
+                ]
+            },
+            {
+                "file": "/routes/secureDocumentAccess.ts",
+                "category": "propagation",
+                "line": 7,
+                "explanation": "Construction requestData avec req.params.filename",
+                "variables": [
+                    "requestData.fileName"
+                ]
+            },
+            {
+                "file": "/routes/secureDocumentAccess.ts",
+                "category": "propagation",
+                "line": 12,
+                "explanation": "Passage des données à SecureFileHandler.handleFileRequest",
+                "variables": [
+                    "requestData"
+                ]
+            },
+            {
+                "file": "/lib/secureFileHandler.ts",
+                "category": "propagation",
+                "line": 6,
+                "explanation": "Appel DocumentAccessController.authorizeAccess avec validation multi-couches",
+                "variables": [
+                    "inputData"
+                ]
+            },
+            {
+                "file": "/lib/documentAccessController.ts",
+                "category": "propagation",
+                "line": 5,
+                "explanation": "Appel SecureDocumentManager.processFileRequest avec extraction filename",
+                "variables": [
+                    "requestData"
+                ]
+            },
+            {
+                "file": "/lib/secureDocumentManager.ts",
+                "category": "propagation",
+                "line": 11,
+                "explanation": "Appel FileAccessValidator.validatePath avec sanitisation complète",
+                "variables": [
+                    "fileName"
+                ]
+            },
+            {
+                "file": "/lib/fileAccessValidator.ts",
+                "category": "propagation",
+                "line": 8,
+                "explanation": "Validation rigoureuse: pas de .. / \\ + whitelist extensions + path canonique",
+                "variables": [
+                    "fileName"
+                ]
+            },
+            {
+                "file": "/lib/fileAccessValidator.ts",
+                "category": "propagation",
+                "line": 11,
+                "explanation": "Vérification que le path résolu commence par QUARANTINE_BASE",
+                "variables": [
+                    "fullPath"
+                ]
+            },
+            {
+                "file": "/routes/secureDocumentAccess.ts",
+                "category": "sink",
+                "line": 21,
+                "explanation": "res.sendFile avec path entièrement validé et sécurisé par 5 couches",
+                "variables": [
+                    "handlerResult.filePath"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "FP",
+            "explanation": "False Positive: Bien que le scanner SAST détecte res.sendFile et suspecte une vulnérabilité de Path Traversal, cette implémentation est sécurisée par un pipeline de validation complexe sur 5 fichiers. Le FileAccessValidator bloque tous les caractères dangereux (.., /, \\), applique une whitelist d'extensions (.txt, .md, .log, .json), utilise path.resolve avec vérification que le chemin final reste dans QUARANTINE_BASE, et effectue une sanitisation finale. Les données utilisateur passent par 7 étapes de validation avant d'atteindre res.sendFile, rendant impossible tout path traversal."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "6e6db257-3940-43fa-b1f0-c9f2dd00aea9",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "line": 56,
+                                "content": "      const subs = getSubsFromFile()"
+                            },
+                            {
+                                "line": 57,
+                                "content": ""
+                            },
+                            {
+                                "line": 58,
+                                "content": "      challengeUtils.solveIf(challenges.videoXssChallenge, () => { return utils.contains(subs, '</script><script>alert(`xss`)</script>') })"
+                            },
+                            {
+                                "line": 59,
+                                "content": ""
+                            },
+                            {
+                                "line": 60,
+                                "content": "      const themeKey = config.get<string>('application.theme') as keyof typeof themes"
+                            }
+                        ],
+                        "id": "1705cc21-1c2b-4e6b-ad07-a33a9588e0e8",
+                        "vulnerableStartLine": 58,
+                        "vulnerableEndLine": 58,
+                        "startLine": 56,
+                        "endLine": 60,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "6e6db257-3940-43fa-b1f0-c9f2dd00aea9",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-07-31T11:27:12.000Z",
+                "updateAt": "2025-07-31T11:27:12.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "MEDIUM",
+                "currentPriority": "normal",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/routes/videoHandler.ts",
+                "vulnerableStartLine": 58,
+                "vulnerableEndLine": 58,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-79"
+                    ],
+                    "owaspTop10": [
+                        "A07:2017 - Cross-Site Scripting (XSS)",
+                        "A03:2021 - Injection"
+                    ],
+                    "cweArray": [
+                        "CWE-79"
+                    ],
+                    "references": [
+                        {
+                            "id": "c01a8077-70cb-4164-96a8-085a8b7437a2",
+                            "name": "Juice Shop videoHandler.ts Injection",
+                            "url": "https://github.com/juice-shop/juice-shop/blob/1ceb8751e986dacd3214a618c37e7411be6bc11a/routes/videoHandler.ts#L68"
+                        },
+                        {
+                            "id": "da78e1a7-3adf-4683-b033-7943d002e91d",
+                            "name": "XSS in a Script Tag",
+                            "url": "https://www.developsec.com/2017/11/09/xss-in-a-script-tag/"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "unknown-value-with-script-tag.js",
+                            "content": "/*\n * Copyright (c) 2014-2020 Bjoern Kimminich.\n * SPDX-License-Identifier: MIT\n */\n\nconst fs = require('fs')\nconst pug = require('pug')\nconst config = require('config')\nconst challenges = require('../data/datacache').challenges\nconst utils = require('../lib/utils')\nconst themes = require('../views/themes/themes').themes\n\nexports.getVideo = () => {\n  return (req, res) => {\n    const path = videoPath()\n    const stat = fs.statSync(path)\n    const fileSize = stat.size\n    const range = req.headers.range\n    if (range) {\n      const parts = range.replace(/bytes=/, '').split('-')\n      const start = parseInt(parts[0], 10)\n      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1\n      const chunksize = (end - start) + 1\n      const file = fs.createReadStream(path, { start, end })\n      const head = {\n        'Content-Range': `bytes ${start}-${end}/${fileSize}`,\n        'Accept-Ranges': 'bytes',\n        'Content-Length': chunksize,\n        'Content-Location': '/assets/public/videos/JuiceShopJingle.mp4',\n        'Content-Type': 'video/mp4'\n      }\n      res.writeHead(206, head)\n      file.pipe(res)\n    } else {\n      const head = {\n        'Content-Length': fileSize,\n        'Content-Type': 'video/mp4'\n      }\n      res.writeHead(200, head)\n      fs.createReadStream(path).pipe(res)\n    }\n  }\n}\n\nexports.promotionVideo = () => {\n  return (req, res) => {\n    fs.readFile('views/promotionVideo.pug', function (err, buf) {\n      if (err) throw err\n      let template = buf.toString()\n      const subs = getSubsFromFile()\n\n      // ok:unknown-value-with-script-tag\n      var w = \"<script>\";\n\n      // ruleid:unknown-value-with-script-tag\n      utils.solveIf(challenges.videoXssChallenge, () => { return utils.contains(subs, '</script><script>alert(`xss`)</script>') })\n\n      const theme = themes[config.get('application.theme')]\n      template = template.replace(/_title_/g, config.get('application.name'))\n      template = template.replace(/_favicon_/g, favicon())\n      template = template.replace(/_bgColor_/g, theme.bgColor)\n      template = template.replace(/_textColor_/g, theme.textColor)\n      template = template.replace(/_navColor_/g, theme.navColor)\n      template = template.replace(/_primLight_/g, theme.primLight)\n      template = template.replace(/_primDark_/g, theme.primDark)\n      const fn = pug.compile(template)\n      let compiledTemplate = fn()\n      // ruleid:unknown-value-with-script-tag\n      compiledTemplate = compiledTemplate.replace('<script id=\"subtitle\"></script>', '<script id=\"subtitle\" type=\"text/vtt\" data-label=\"English\" data-lang=\"en\">' + subs + '</script>')\n      res.send(compiledTemplate)\n    })\n  }\n  function favicon () {\n    return utils.extractFilename(config.get('application.favicon'))\n  }\n}\n\nfunction getSubsFromFile () {\n  let subtitles = 'JuiceShopJingle.vtt'\n  if (config && config.application && config.application.promotion && config.application.promotion.subtitles !== null) {\n    subtitles = utils.extractFilename(config.application.promotion.subtitles)\n  }\n  const data = fs.readFileSync('frontend/dist/frontend/assets/public/videos/' + subtitles, 'utf8')\n  return data.toString()\n}\n\nfunction videoPath () {\n  if (config && config.application && config.application.promotion && config.application.promotion.video !== null) {\n    const video = utils.extractFilename(config.application.promotion.video)\n    return 'frontend/src/assets/public/videos/' + video\n  }\n  return 'frontend/src/assets/public/videos/JuiceShopJingle.mp4'\n}\n\n// cf. https://github.com/ianmin2/lightframer//blob/182348e6e9f2066991df80d02b1233ff7db0d4a1/assets/assets/js/jquery.js#L9232\njQuery.ajaxTransport( \"script\", function( s ) {\n    // This transport only deals with cross domain requests\n    if ( s.crossDomain ) {\n        var script, callback;\n        return {\n            send: function( _, complete ) {\n                // ok:unknown-value-with-script-tag\n                script = jQuery(\"<script>\").prop({\n                    async: true,\n                    charset: s.scriptCharset,\n                    src: s.url\n                }).on(\n                    \"load error\",\n                    callback = function( evt ) {\n                        script.remove();\n                        callback = null;\n                        if ( evt ) {\n                            complete( evt.type === \"error\" ? 404 : 200, evt.type );\n                        }\n                    }\n                );\n                document.head.appendChild( script[ 0 ] );\n            },\n            abort: function() {\n                if ( callback ) {\n                    callback();\n                }\n            }\n        };\n    }\n});\n"
+                        }
+                    ],
+                    "id": "d41a8e5b-4aa9-4891-8596-6c738467c5b8",
+                    "name": "Unsanitized Script Tag Injection",
+                    "shortDescription": "Unsanitized data is injected into a <script> tag, enabling cross-site scripting attacks.",
+                    "description": "A cross-site scripting vulnerability arises when an unknown value is inserted directly into a `<script>` tag without validation or encoding. The lack of input sanitization or context-aware escaping **(root cause)** allows attacker-controlled payloads to execute in users’ browsers. An attacker can craft a value for the `subs` variable that closes the existing script context and injects arbitrary JavaScript, leading to session hijacking, data theft, or site defacement.",
+                    "howToPrevent": "1. **Use Context-Aware Encoding**: Escape data before inserting into JavaScript contexts (e.g., use `JSON.stringify` or templating engines with auto-escaping).\r\n2. **Validate and Sanitize Input**: Apply a whitelist of allowed characters or patterns to any external input used in templates.\r\n3. **Escape Special Characters**: Replace `<`, `>`, `&`, `\"`, and `'` in dynamic values.\r\n4. **Leverage Secure Templating**: Use template functions that automatically encode variables based on context.\r\n5. **Content Security Policy**: Implement a strict CSP to restrict inline scripts and external sources.",
+                    "severity": "MEDIUM",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N",
+                        "baseScore": "5.4"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "audit"
+                        ],
+                        "technology": [
+                            "javascript"
+                        ],
+                        "languages": [
+                            "JavaScript",
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "LOW",
+                        "impact": "LOW",
+                        "likelihood": "LOW"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast",
+                "dataflow": [
+                    {
+                        "file": "/server.ts",
+                        "category": "source",
+                        "line": 657,
+                        "explanation": "Route GET /promotion - point d'entrée HTTP public",
+                        "variables": [
+                            "req"
+                        ]
+                    },
+                    {
+                        "file": "/routes/videoHandler.ts",
+                        "category": "propagation",
+                        "line": 81,
+                        "explanation": "Configuration application.promotion.subtitles peut être contrôlée",
+                        "variables": [
+                            "subtitles"
+                        ]
+                    },
+                    {
+                        "file": "/routes/videoHandler.ts",
+                        "category": "propagation",
+                        "line": 82,
+                        "explanation": "Lecture fichier sous-titres sans validation du contenu",
+                        "variables": [
+                            "data"
+                        ]
+                    },
+                    {
+                        "file": "/routes/videoHandler.ts",
+                        "category": "propagation",
+                        "line": 56,
+                        "explanation": "Appel getSubsFromFile() retourne contenu non-sanitisé",
+                        "variables": [
+                            "subs"
+                        ]
+                    },
+                    {
+                        "file": "/routes/videoHandler.ts",
+                        "category": "sink",
+                        "line": 71,
+                        "explanation": "Injection directe de subs dans balise script sans échappement",
+                        "variables": [
+                            "subs"
+                        ]
+                    }
+                ],
+                "vulnerability_truth": {
+                    "verdict": "TP",
+                    "explanation": "True Positive: Vulnérabilité XSS exploitable via injection dans balise script. Le contenu de subs provient d'un fichier de sous-titres (application.promotion.subtitles) lu sans validation. Si un attaquant peut contrôler ce fichier via la configuration ou upload, il peut injecter </script><script>alert(1)</script> dans le fichier de sous-titres. Ce payload sera directement injecté dans la balise script et exécuté dans le navigateur, permettant un XSS complet."
+                }
+            }
+        },
+        "vulnerability": "sast"
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "vulnerabilityId": "a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6",
+        "sast": {
+            "base": {
+                "codeSnippets": [
+                    {
+                        "code": [
+                            {
+                                "content": "      // Traitement sécurisé du template avec validation multi-couches"
+                            },
+                            {
+                                "content": "      const processedTemplate = SecureTemplateManager.processTemplate("
+                            },
+                            {
+                                "content": "        templateContent,"
+                            },
+                            {
+                                "content": "        subtitleContent"
+                            },
+                            {
+                                "content": "      )"
+                            }
+                        ],
+                        "id": "secure-template-snippet",
+                        "vulnerableStartLine": 32,
+                        "vulnerableEndLine": 36,
+                        "startLine": 30,
+                        "endLine": 40,
+                        "language": "TypeScript",
+                        "fixAnalysis": "",
+                        "fixAnalysisDescription": ""
+                    }
+                ],
+                "id": "a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6",
+                "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+                "createdAt": "2025-08-02T15:30:00.000Z",
+                "updateAt": "2025-08-02T15:30:00.000Z",
+                "timeToFix": "",
+                "currentState": "to_verify",
+                "currentSeverity": "MEDIUM",
+                "currentPriority": "normal",
+                "contextualExplanation": "",
+                "language": "TypeScript",
+                "path": "juice-shop-master/routes/securePromotionVideo.ts",
+                "vulnerableStartLine": 32,
+                "vulnerableEndLine": 36,
+                "vulnerability": {
+                    "cwe": [
+                        "CWE-79"
+                    ],
+                    "owaspTop10": [
+                        "A07:2017 - Cross-Site Scripting (XSS)",
+                        "A03:2021 - Injection"
+                    ],
+                    "cweArray": [
+                        "CWE-79"
+                    ],
+                    "references": [
+                        {
+                            "id": "xss-template-injection-ref",
+                            "name": "Template Injection XSS Prevention",
+                            "url": "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/18-Testing_for_Server_Side_Template_Injection"
+                        }
+                    ],
+                    "codeExamples": [
+                        {
+                            "filename": "secure-template-processing.ts",
+                            "content": "// APPAREMMENT VULNÉRABLE - Injection dans template avec données utilisateur\nconst processedTemplate = SecureTemplateManager.processTemplate(\n  templateContent, \n  subtitleContent  // <- Données potentiellement contrôlées par l'utilisateur\n)\n\n// MAIS EN RÉALITÉ SÉCURISÉ par pipeline de validation multi-couches:\n// 1. SecureContentValidator.validateAndSanitize()\n// 2. XssSanitizer.sanitizeForScript()\n// 3. SecureTemplateManager.doubleEscapeForScript()\n// 4. Validation d'intégrité du template\n// 5. Headers CSP strictes"
+                        }
+                    ],
+                    "id": "secure-template-xss-false-positive",
+                    "name": "Apparent Template XSS with Secure Pipeline",
+                    "shortDescription": "Template processing appears vulnerable to XSS but is secured by comprehensive validation pipeline.",
+                    "description": "This code appears to inject user-controlled subtitle content directly into HTML templates, which could lead to XSS. However, the content undergoes extensive security processing through a 4-layer validation pipeline: SecureContentValidator blocks dangerous patterns, XssSanitizer removes executable content, SecureTemplateManager performs double-escaping, and template integrity validation ensures no malicious code injection. A SAST scanner would flag this as XSS due to the template processing pattern, but it's a false positive due to the comprehensive security controls.",
+                    "howToPrevent": "Continue using multi-layer validation pipelines with content sanitization, template integrity checks, and CSP headers.",
+                    "severity": "MEDIUM",
+                    "language": "JavaScript",
+                    "vulnerabilityType": "sast",
+                    "cvss3": {
+                        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N",
+                        "baseScore": "5.4"
+                    },
+                    "_cvss3": "cvss3",
+                    "sourceMetadata": {
+                        "subcategory": [
+                            "audit"
+                        ],
+                        "technology": [
+                            "typescript"
+                        ],
+                        "languages": [
+                            "TypeScript"
+                        ],
+                        "category": "security",
+                        "confidence": "LOW",
+                        "impact": "MEDIUM",
+                        "likelihood": "LOW"
+                    },
+                    "_sourceMetadata": "sourceMetadata"
+                },
+                "historyItems": {
+                    "items": []
+                },
+                "vulnerabilityType": "sast",
+                "dataflow": [
+                    {
+                        "file": "/server.ts",
+                        "category": "source",
+                        "line": 658,
+                        "explanation": "Route GET /promotion/secure - point d'entrée HTTP public",
+                        "variables": [
+                            "req"
+                        ]
+                    },
+                    {
+                        "file": "/routes/securePromotionVideo.ts",
+                        "category": "propagation",
+                        "line": 27,
+                        "explanation": "Appel getSecureSubtitles() pour obtenir le contenu des sous-titres",
+                        "variables": [
+                            "subtitleContent"
+                        ]
+                    },
+                    {
+                        "file": "/routes/securePromotionVideo.ts",
+                        "category": "propagation",
+                        "line": 50,
+                        "explanation": "Lecture du fichier de sous-titres depuis le système de fichiers",
+                        "variables": [
+                            "rawContent"
+                        ]
+                    },
+                    {
+                        "file": "/lib/secureContentValidator.ts",
+                        "category": "propagation",
+                        "line": 25,
+                        "explanation": "Validation et sanitisation via SecureContentValidator.validateAndSanitize",
+                        "variables": [
+                            "validationResult"
+                        ]
+                    },
+                    {
+                        "file": "/lib/xssSanitizer.ts",
+                        "category": "propagation",
+                        "line": 26,
+                        "explanation": "Sanitisation XSS multi-couches via XssSanitizer.sanitizeForScript",
+                        "variables": [
+                            "cleaned"
+                        ]
+                    },
+                    {
+                        "file": "/lib/secureContentValidator.ts",
+                        "category": "propagation",
+                        "line": 73,
+                        "explanation": "Nettoyage spécifique sous-titres - suppression balises HTML et échappement",
+                        "variables": [
+                            "cleaned"
+                        ]
+                    },
+                    {
+                        "file": "/routes/securePromotionVideo.ts",
+                        "category": "propagation",
+                        "line": 66,
+                        "explanation": "Retour du contenu sanitisé validé",
+                        "variables": [
+                            "sanitizedContent"
+                        ]
+                    },
+                    {
+                        "file": "/lib/secureTemplateManager.ts",
+                        "category": "propagation",
+                        "line": 28,
+                        "explanation": "Validation finale et injection sécurisée via SecureTemplateManager",
+                        "variables": [
+                            "validationResult"
+                        ]
+                    },
+                    {
+                        "file": "/lib/secureTemplateManager.ts",
+                        "category": "propagation",
+                        "line": 41,
+                        "explanation": "Double échappement pour contexte JavaScript et HTML",
+                        "variables": [
+                            "doubleEscaped"
+                        ]
+                    },
+                    {
+                        "file": "/routes/securePromotionVideo.ts",
+                        "category": "sink",
+                        "line": 32,
+                        "explanation": "Injection apparemment vulnérable mais sécurisée par pipeline de validation",
+                        "variables": [
+                            "processedTemplate"
+                        ]
+                    }
+                ],
+                "vulnerability_truth": {
+                    "verdict": "FP",
+                    "explanation": "False Positive: Bien que le code semble injecter du contenu utilisateur dans un template HTML (pattern XSS classique), il passe par un pipeline de sécurité complet sur 4 fichiers. SecureContentValidator bloque les patterns dangereux et valide le contenu, XssSanitizer applique 3 couches de nettoyage (DOMPurify, regex, validation finale), SecureTemplateManager effectue un double échappement (JavaScript + HTML), et des headers CSP stricts sont appliqués. Un scanner SAST détecterait cette vulnérabilité à cause du pattern de traitement de template avec données utilisateur, mais c'est un faux positif car toutes les données sont entièrement sanitisées avant injection."
+                }
+            }
+        },
+        "vulnerability": "sast"
     }
 ]

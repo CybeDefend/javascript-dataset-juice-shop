@@ -112,10 +112,13 @@ import { servePremiumContent } from './routes/premiumReward'
 import { contractExploitListener } from './routes/web3Wallet'
 import { updateUserProfile } from './routes/updateUserProfile'
 import { processTemplate } from './routes/templateProcessor'
-import { getVideo, promotionVideo } from './routes/videoHandler'
+import { promotionVideo, getVideo } from './routes/videoHandler'
+import { securePromotionVideo } from './routes/securePromotionVideo'
+import redirect from './routes/redirect'
 import { likeProductReviews } from './routes/likeProductReviews'
 import { repeatNotification } from './routes/repeatNotification'
 import { serveQuarantineFiles } from './routes/quarantineServer'
+import { secureFileAccess } from './routes/secureDocumentAccess'
 import { showProductReviews } from './routes/showProductReviews'
 import { nftMintListener, walletNFTVerify } from './routes/nftMint'
 import { createProductReviews } from './routes/createProductReviews'
@@ -276,8 +279,8 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   app.use('/ftp', serveIndexMiddleware, serveIndex('ftp', { icons: true })) // vuln-code-snippet vuln-line directoryListingChallenge
   app.use('/ftp(?!/quarantine)/:file', servePublicFiles()) // vuln-code-snippet vuln-line directoryListingChallenge
   app.use('/ftp/quarantine/:file', serveQuarantineFiles()) // vuln-code-snippet neutral-line directoryListingChallenge
+  app.use('/api/secure/documents/:filename', secureFileAccess())
 
-  /* Secure document serving */
   app.use('/api/documents/:documentId', serveValidatedDocuments())
 
   app.use('/.well-known', serveIndexMiddleware, serveIndex('.well-known', { icons: true, view: 'details' }))
@@ -654,6 +657,7 @@ restoreOverwrittenFilesWithOriginals().then(() => {
 
   /* Routes for promotion video page */
   app.get('/promotion', promotionVideo())
+  app.get('/promotion/secure', securePromotionVideo())
   app.get('/video', getVideo())
 
   /* Routes for profile page */
