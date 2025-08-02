@@ -1778,7 +1778,188 @@
                 "vulnerabilityType": "sast"
             }
         },
-        "vulnerability": "sast"
+        "vulnerability": "sast",
+        "dataflow": [
+            {
+                "file": "/routes/updateUserProfile.ts",
+                "category": "source",
+                "line": 36,
+                "explanation": "Input utilisateur reçu via req.body.username sans validation",
+                "variables": [
+                    "req.body.username"
+                ]
+            },
+            {
+                "file": "/routes/updateUserProfile.ts",
+                "category": "propagation",
+                "line": 36,
+                "explanation": "Username utilisateur stocké directement en base de données",
+                "variables": [
+                    "user.update({ username: req.body.username })"
+                ]
+            },
+            {
+                "file": "/routes/userProfile.ts",
+                "category": "propagation",
+                "line": 42,
+                "explanation": "Récupération de l'utilisateur depuis la base de données",
+                "variables": [
+                    "user = await UserModel.findByPk(loggedInUser.data.id)"
+                ]
+            },
+            {
+                "file": "/routes/userProfile.ts",
+                "category": "propagation",
+                "line": 53,
+                "explanation": "Username extrait du modèle utilisateur",
+                "variables": [
+                    "username = user.username"
+                ]
+            },
+            {
+                "file": "/routes/userProfile.ts",
+                "category": "propagation",
+                "line": 55,
+                "explanation": "Vérification du pattern #{...} dans le username",
+                "variables": [
+                    "username?.match(/#{(.*)}/)"
+                ]
+            },
+            {
+                "file": "/routes/userProfile.ts",
+                "category": "propagation",
+                "line": 57,
+                "explanation": "Extraction du code entre #{} du username",
+                "variables": [
+                    "code = username?.substring(2, username.length - 1)"
+                ]
+            },
+            {
+                "file": "/routes/userProfile.ts",
+                "category": "sink",
+                "line": 62,
+                "explanation": "Exécution directe du code utilisateur via eval() - RCE exploitable",
+                "variables": [
+                    "eval(code)"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "TP",
+            "explanation": "VRAI POSITIF - Code Injection exploitable. Un utilisateur peut modifier son username via POST /profile en injectant du code JavaScript dans le format #{code}. Quand il accède à GET /profile, si le challenge usernameXssChallenge est activé et que son username match le pattern #{...}, le contenu entre les accolades est directement passé à eval() sans validation. Un attaquant peut exécuter du code JavaScript arbitraire côté serveur (ex: #{process.exit()} ou #{require('fs').readFileSync('/etc/passwd')})."
+        }
+    },
+    {
+        "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
+        "scanId": "f84faaf7-4c59-4e3b-bb6c-df3c0ac24a27",
+        "vulnerabilityLocation": {
+            "path": "routes/secureUserProfile.ts",
+            "startLine": 32,
+            "endLine": 32,
+            "componentName": "retrieveUserProfile"
+        },
+        "fingerprint": "eval_code_injection_secure_userprofile",
+        "vulnerability": {
+            "cwe": [
+                "CWE-95"
+            ],
+            "owaspTop10": [
+                "A03:2021 - Injection"
+            ],
+            "name": "Code Injection via Function constructor",
+            "shortDescription": "User input passed to Function constructor for evaluation",
+            "description": "Code appears to use Function constructor with user input which could enable code injection.",
+            "severity": "HIGH",
+            "language": "TypeScript",
+            "vulnerabilityType": "sast"
+        },
+        "dataflow": [
+            {
+                "file": "/routes/updateUserProfile.ts",
+                "category": "source",
+                "line": 36,
+                "explanation": "Input utilisateur reçu via req.body.username sans validation initiale",
+                "variables": [
+                    "req.body.username"
+                ]
+            },
+            {
+                "file": "/routes/updateUserProfile.ts",
+                "category": "propagation",
+                "line": 36,
+                "explanation": "Username utilisateur stocké en base de données",
+                "variables": [
+                    "user.update({ username: req.body.username })"
+                ]
+            },
+            {
+                "file": "/routes/secureUserProfile.ts",
+                "category": "propagation",
+                "line": 15,
+                "explanation": "Récupération de l'utilisateur depuis la base de données",
+                "variables": [
+                    "user = await models.User.findByPk(loggedInUser.data.id)"
+                ]
+            },
+            {
+                "file": "/routes/secureUserProfile.ts",
+                "category": "propagation",
+                "line": 18,
+                "explanation": "Username extrait du modèle utilisateur",
+                "variables": [
+                    "username = user.username"
+                ]
+            },
+            {
+                "file": "/routes/secureUserProfile.ts",
+                "category": "propagation",
+                "line": 21,
+                "explanation": "Vérification du pattern #{...} dans le username",
+                "variables": [
+                    "username?.match(/#{(.*)}/)"
+                ]
+            },
+            {
+                "file": "/routes/secureUserProfile.ts",
+                "category": "propagation",
+                "line": 25,
+                "explanation": "Extraction du code entre #{} du username",
+                "variables": [
+                    "code = username?.substring(2, username.length - 1)"
+                ]
+            },
+            {
+                "file": "/lib/security.ts",
+                "category": "propagation",
+                "line": 27,
+                "explanation": "Validation de sécurité avec whitelist de patterns autorisés",
+                "variables": [
+                    "isValidExpressionPattern(code)"
+                ]
+            },
+            {
+                "file": "/lib/security.ts",
+                "category": "propagation",
+                "line": 54,
+                "explanation": "Double validation avant évaluation dans contexte restreint",
+                "variables": [
+                    "if (!isValidExpressionPattern(code))"
+                ]
+            },
+            {
+                "file": "/lib/security.ts",
+                "category": "sink",
+                "line": 66,
+                "explanation": "Function constructor avec contexte restreint - MAIS input validé par whitelist stricte",
+                "variables": [
+                    "new Function('context', `with(context) { return ${code} }`)"
+                ]
+            }
+        ],
+        "vulnerability_truth": {
+            "verdict": "FP",
+            "explanation": "FAUX POSITIF - Mesures de sécurité effectives. Bien que le code utilise Function constructor qui peut théoriquement permettre une injection de code, plusieurs mesures de sécurité rendent l'exploitation impossible : 1) Validation stricte par whitelist autorisant uniquement [a-zA-Z0-9\\s\\+\\-\\*\\/\\(\\)\\.\\,\\'\\\"]+, 2) Blacklist de mots-clés dangereux (eval, require, process, etc.), 3) Contexte d'exécution restreint sans accès aux objets globaux, 4) Double validation avant évaluation, 5) Limitation de la longueur du résultat. Un attaquant ne peut pas injecter de code malveillant car seules les expressions mathématiques simples sont autorisées."
+        }
     },
     {
         "projectId": "dc14b5b8-cc36-4a8d-9eee-7c857f3c71dd",
