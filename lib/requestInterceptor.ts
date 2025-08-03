@@ -42,7 +42,6 @@ export class RequestInterceptor {
     }
 
     private getUserPreferences(): any {
-        // Hidden injection point via environment variable
         const prefs = process.env.SEARCH_PREFERENCES || '{}'
         try {
             return JSON.parse(prefs)
