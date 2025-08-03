@@ -8,7 +8,7 @@ J'ai besoin pour cela d'une vraie application avec des vulnérabilités. C'est p
 
 PROCESSUS A SUIVRE DE CREATION DU DATASET
 
-OBJECTIF : Compléter le fichier ground_truth.json contenant toutes les vulnérabilités de mon application avec leur DATAFLOW et le résultat de l’analyse Faux positif ou Vrai positif.
+OBJECTIF : Produire les analyses JSON ("dataflow" et "vulnerability_truth") nécessaires pour compléter notre fichier ground_truth.json.
 
 Je vais maintenant te détailler chaque étape qu’il faudra faire pour réaliser le dataset parfait vulnérabilité par vulnérabilité.
 - ETAPE 1 - Analyse de la vulnérabilité détectée par mon scanner.L’objectif de cette étape va être premièrement de déterminer si la vulnérabilité détecté par mon scanner est un FAUX positif ou un VRAI positif.Pour cela il faudra déjà bien comprendre la vulnérabilité que je vais te donner ci dessous et que tu analyses le fichier ou se trouve la source. 
@@ -57,7 +57,10 @@ Je vais maintenant te détailler chaque étape qu’il faudra faire pour réalis
 	En fonction des résultats de l’ETAPE 1, l’objectif va être maintenant de compléter notre dataset avec la création de l’opposé de ce qu’on a trouvé.	Si on a trouvé que la vulnérabilité était un FAUX POSITIF alors voici ce qu’on fait : 
 		On vient dupliquer la source en recopiant le code (ce que le scanner a détecté afin qu’il détecte également cette nouvelle vulnérabilité) et nous allons créer un VRAI POSITIF.	Si on a trouvé que la vulnérabilité était un VRAI POSITIF alors voici ce qu’on fait : 
 		On vient dupliquer la source en recopiant le code (ce que le scanner a détecté afin qu’il détecte également cette nouvelle vulnérabilité) et nous allons créer un FAUX POSITIF.
-	Après la création il faudra alors dupliquer également la vulnérabilité dans le fichier ground_truth.json en ajoutant tout comme la vulnérabilité précédente son “dataflow” et son “vulnerability_truth”.
+	Après avoir créé le code, vous générerez l'analyse correspondante pour le fichier ground_truth.json. Attention, ne dupliquez pas l'objet entier de la vulnérabilité source. Créez un nouvel objet JSON contenant uniquement les deux clés suivantes, basées sur votre analyse du nouveau code :
+	"dataflow"
+	"vulnerability_truth"
+	Je me chargerai moi-même d'intégrer cet objet avec les métadonnées qui seront générées par mon scanner.
 
 	ATTENTION - CREATION DE NOUVELLE VULNERABILITE REGLE A RESPECTER IMPERATIVEMENT :
 		- Il faut absolument que mon scanner détecte la vulnérabilité. De ce fait c’est important de recopier simplement ce qui a été detecté et ensuite de modifier la variable vulnérable en amont pour en faire un VRAI ou un FAUX positif.
@@ -78,5 +81,18 @@ Je vais maintenant te détailler chaque étape qu’il faudra faire pour réalis
 					* Cas d'un FAUX POSITIF : La mesure de sécurité (nettoyage, validation, etc.) qui rend la vulnérabilité inoffensive doit être implémentée de manière subtile et non-évidente.
 					* Cas d'un VRAI POSITIF : La source de la donnée "contaminée" (l'injection) doit être discrète. Évitez les input() évidents et privilégiez des points d'entrée réalistes mais cachés (paramètres d'API, cookies, headers HTTP, etc.).
 		- INTEGRATION ET ACCESSIBILITE EXTERNE : Le nouveau code vulnérable ne doit JAMAIS être du code mort (dead code). Vous devez l'intégrer pleinement dans l'application en vous assurant qu'il est appelable depuis un point d'entrée externe (ex: une nouvelle route API, un endpoint de formulaire, etc.). Un utilisateur ou un service extérieur doit pouvoir déclencher le chemin d'exécution menant à la vulnérabilité.
+
+FORMAT DE SORTIE FINAL ATTENDU
+
+Votre réponse finale doit être un rapport complet, clairement structuré en deux parties distinctes correspondant aux deux étapes de votre mission.
+
+Partie 1 : Analyse de la Vulnérabilité Existante
+- L'objet JSON contenant le "dataflow" et la "vulnerability_truth" pour la vulnérabilité initiale ajouté dans le fichier ground_truth.json à la vulnérabilité analysée.
+
+Partie 2 : Création et Analyse de la Nouvelle Vulnérabilité
+
+- L'objet JSON contenant le "dataflow" et la "vulnerability_truth" pour la vulnérabilité que vous venez de créer ajouté dans le fichier ground_truth.json.
+
+Cette structure en deux parties est impérative pour la validation de votre travail.
 
 Suis le process détaillé donné ci-dessus pour cette vulnérabilité : 
